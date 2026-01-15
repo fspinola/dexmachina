@@ -84,7 +84,7 @@ def load_genesis_retarget_data(
     if data_fname.endswith(".npy"):
         data = np.load(data_fname, allow_pickle=True).item()
     else:
-        data = torch.load(data_fname)
+        data = torch.load(data_fname, weights_only=False)
         loaded_tensor = True 
 
     demo_data = data["demo_data"] 

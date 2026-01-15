@@ -1,6 +1,7 @@
 dexmachina/hand_proc/retargeted
 logs/
 wandb/
+rendered/
   
 
 # Byte-compiled / optimized / DLL files

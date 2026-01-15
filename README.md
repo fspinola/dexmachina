@@ -59,6 +59,11 @@ pip install -e .
 
 See the full [documentation](https://mandizhao.github.io/dexmachina-docs) for additional installation instructions for dexterous hand and demonstration data processing, kinematic retargeting, raytracer rendering, etc. 
 
+[for newer versions of torch] Patch in /home/fspinola/venvs/dexmachina-venv2/lib/python3.10/site-packages/rl_games/algos_torch/torch_ext.py:
+```
+def safe_load(filename):
+    return safe_filesystem_op(lambda f: torch.load(f, weights_only=False), filename)
+```
 
 ## Citation
 This codebase is released with the following preprint:

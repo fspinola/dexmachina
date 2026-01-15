@@ -79,16 +79,16 @@ def eval_one_episode(env, agent, obj_state_tensor, print_rew=False, record_video
                     
             if show_reference: # visualize the demo traj and set zero action
                 obj.set_object_state(
-                    root_pos=state[:, :3][None],
-                    root_quat=state[:, 3:7][None],
-                    joint_qpos=state[:, 7][None],
-                    env_idxs=torch.tensor([1], dtype=torch.int32, device=device),
+                    root_pos=demo_state[:3][None],
+                    root_quat=demo_state[3:7][None],
+                    joint_qpos=demo_state[7:][None],
+                    env_idxs=torch.tensor([num_envs-1], dtype=torch.int32, device=device),
                 )
                 actions[-1, :] = -1.0 
                 for robot, joints in zip([left_hand, right_hand], [joint_target_left, joint_target_right]):
                     robot.set_joint_position(
                         joint_targets=joints[env_step][None],
-                        env_idxs=[1],
+                        env_idxs=[num_envs-1],
                     ) 
             obs, rew, dones, infos = env.step(actions) 
             obj_pos, obj_quat, obj_arti = obj.root_pos, obj.root_quat, obj.dof_pos
@@ -245,7 +245,7 @@ def main():
         # eval_data = np.load(ckpt_eval_fname, allow_pickle=True).item() 
         if args.record_video: 
             # save video with moviepy
-            from moviepy.editor import ImageSequenceClip
+            from moviepy import ImageSequenceClip
             clip = ImageSequenceClip(frames, fps=int(1/uenv.dt/2))
             clip.write_videofile(video_fname)
             print(f"Saved video to {video_fname}")
