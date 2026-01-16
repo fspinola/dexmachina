@@ -19,6 +19,11 @@ dependencies = [
     "wandb>=0.12.21",
 ]
 
+[tool.uv]
+override-dependencies = [
+  "pymeshlab<2025.7",
+]
+
 [tool.uv.sources]
 genesis-world = { git = "https://github.com/MandiZhao/Genesis.git", rev = "e9df2d8f7d30595d65cabdc618c6b5ca8cc657e2" }
 rl-games = { git = "https://github.com/MandiZhao/rl_games.git" }
