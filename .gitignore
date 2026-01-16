@@ -2,7 +2,8 @@ dexmachina/hand_proc/retargeted
 logs/
 wandb/
 rendered/
-  
+# logs from training on remote cluster  
+slurm-*.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
