@@ -3,7 +3,7 @@ logs/
 wandb/
 rendered/
 # logs from training on remote cluster  
-slurm-*.out
+slurm_logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

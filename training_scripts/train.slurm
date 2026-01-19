@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=48
 #SBATCH --time=10:00:00
 #SBATCH --job-name=dexmachina_inspire_box
-#SBATCH --output=slurm-%j.out
+#SBATCH --output=slurm_logs/slurm-train-%j.out
 #SBATCH --exclusive
 
 set -euo pipefail
