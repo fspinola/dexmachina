@@ -62,7 +62,7 @@ echo "Detected hand: $HAND"
 # -----------------------------
 # Run evaluation
 # -----------------------------
-uv run python dexmachina/rl/eval_rl_games.py \
+uv run python dexmachina/rl/eval_rl_games_with_metrics.py \
   -B 1 \
   --checkpoint "$CKPT" \
   --add_auc_thresh_frac_diam 0.1 \

@@ -29,7 +29,7 @@ from rl_games.common import env_configurations, vecenv
 from rl_games.common.algo_observer import IsaacAlgoObserver
 from rl_games.torch_runner import Runner
 
-from dexmachina.rl.part_add_metrics import (
+from dexmachina.utils.part_add_metrics import (
     PartAddConfig,
     add_auc_from_episode_part_add_mean,
     compute_part_add_step,
