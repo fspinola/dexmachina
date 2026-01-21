@@ -6,7 +6,7 @@
 #SBATCH --time=04:00:00
 #SBATCH --job-name=dexmachina_eval
 #SBATCH --output=slurm_logs/slurm-eval-%A_%a.out
-#SBATCH --array=1-30%6
+#SBATCH --array=1-52%7
 
 set -euo pipefail
 

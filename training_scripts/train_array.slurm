@@ -3,7 +3,7 @@
 #SBATCH -C h100
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=48
-#SBATCH --time=10:00:00
+#SBATCH --time=20:00:00
 #SBATCH --job-name=dexmachina_array
 #SBATCH --output=slurm_logs/slurm-train-%A_%a.out
 #SBATCH --array=1-12%8
