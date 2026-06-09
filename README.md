@@ -169,11 +169,12 @@ graph poses. To use the full hybrid+contact recipe, regenerate them from the gra
   graph references; validated by headless kinematic playback (correct bimanual grasp cycles).
 - Allegro LH fingertip fidelity matches RH (~7–10 mm) via the `finger_convention_remap` above;
   a residual ~10 mm thumb-mount offset between the two URDFs' thumbs is the only difference left.
-- Inspire references differ slightly from the human (~13–25 mm) due to DexMachina's mimic (joint
-  coupling) ratios differing from the retargeting URDF's. The reference is still self-consistent
-  and exactly reachable by the simulated hand (so RL is unaffected); only human-fidelity of the
-  distal finger segments is slightly reduced. The ratios model the real Inspire hardware, so they
-  are left as-is; native re-retargeting on DexMachina's URDF would remove this if needed.
+- Inspire references sit ~13–25 mm from the human. This is mostly **inherent retargeting quality**
+  (Inspire is an underactuated 6-DoF hand, so it matches the human less closely than the 16-DoF
+  Allegro) — the mimic (joint-coupling) ratio difference between the two URDFs adds only ~2 mm (the
+  base-alignment residual). The reference is self-consistent and exactly reachable by the simulated
+  hand, so RL is unaffected. The mimic ratios model the real Inspire hardware, so they are left
+  as-is; native re-retargeting on DexMachina's URDF would shave off only that ~2 mm.
 
 ## Citation
 This codebase is released with the following preprint:
