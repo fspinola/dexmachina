@@ -1,0 +1,585 @@
+{
+  "methods": [
+    "method1"
+  ],
+  "method_names": [
+    "DexMachina"
+  ],
+  "hand_types": [
+    "inspire_hand",
+    "allegro_hand",
+    "xhand",
+    "schunk_hand"
+  ],
+  "hand_names": [
+    "Inspire Hand",
+    "Allegro Hand",
+    "XHand",
+    "Schunk Hand"
+  ],
+  "objects": [
+    "ketchup30-130-s01-u01",
+    "box30-230-s01-u01",
+    "mixer30-200-s01-u01",
+    "ketchup40-340-s01-u02",
+    "mixer40-340-s01-u01",
+    "notebook40-340-s02-u02",
+    "waffleiron40-340-s01-u01"
+  ],
+  "avg_success_rates": {
+    "method1": {
+      "inspire_hand": {
+        "ketchup30-130-s01-u01": {
+          "value": 0.7071250000000001,
+          "err": 0.09602460388244906,
+          "n_seeds": 5,
+          "seeds_used": [
+            15,
+            24,
+            42,
+            113,
+            66
+          ]
+        },
+        "box30-230-s01-u01": {
+          "value": 0.870709375,
+          "err": 0.017541304826038467,
+          "n_seeds": 5,
+          "seeds_used": [
+            15,
+            24,
+            42,
+            113,
+            66
+          ]
+        },
+        "mixer30-200-s01-u01": {
+          "value": 0.8981562499999999,
+          "err": 0.010264152685034257,
+          "n_seeds": 5,
+          "seeds_used": [
+            15,
+            42,
+            24,
+            113,
+            66
+          ]
+        },
+        "ketchup40-340-s01-u02": {
+          "value": 0.323378125,
+          "err": 0.13827732222607542,
+          "n_seeds": 5,
+          "seeds_used": [
+            15,
+            24,
+            66,
+            42,
+            113
+          ]
+        },
+        "mixer40-340-s01-u01": {
+          "value": 0.6433135416666665,
+          "err": 0.07755353407530469,
+          "n_seeds": 5,
+          "seeds_used": [
+            24,
+            66,
+            42,
+            113,
+            15
+          ]
+        },
+        "notebook40-340-s02-u02": {
+          "value": 0.7124406249999999,
+          "err": 0.1285811915158354,
+          "n_seeds": 5,
+          "seeds_used": [
+            66,
+            42,
+            15,
+            24,
+            113
+          ]
+        },
+        "waffleiron40-340-s01-u01": {
+          "value": 0.23812187500000004,
+          "err": 0.07544557600262626,
+          "n_seeds": 5,
+          "seeds_used": [
+            113,
+            15,
+            24,
+            42,
+            66
+          ]
+        }
+      },
+      "allegro_hand": {
+        "ketchup30-130-s01-u01": {
+          "value": 0.914025,
+          "err": 0.00031531853933760467,
+          "n_seeds": 5,
+          "seeds_used": [
+            113,
+            15,
+            42,
+            24,
+            66
+          ]
+        },
+        "box30-230-s01-u01": {
+          "value": 0.8863671875000001,
+          "err": 0.009421878109452237,
+          "n_seeds": 5,
+          "seeds_used": [
+            66,
+            15,
+            113,
+            24,
+            42
+          ]
+        },
+        "mixer30-200-s01-u01": {
+          "value": 0.7731783088235293,
+          "err": 0.1259430456387157,
+          "n_seeds": 5,
+          "seeds_used": [
+            113,
+            24,
+            42,
+            15,
+            66
+          ]
+        },
+        "ketchup40-340-s01-u02": {
+          "value": 0.8299010416666667,
+          "err": 0.02169571420250884,
+          "n_seeds": 5,
+          "seeds_used": [
+            42,
+            66,
+            24,
+            15,
+            113
+          ]
+        },
+        "mixer40-340-s01-u01": {
+          "value": 0.8112489583333333,
+          "err": 0.009913841224765579,
+          "n_seeds": 5,
+          "seeds_used": [
+            42,
+            113,
+            24,
+            15,
+            66
+          ]
+        },
+        "notebook40-340-s02-u02": {
+          "value": 0.8707895833333333,
+          "err": 0.009851926344171091,
+          "n_seeds": 5,
+          "seeds_used": [
+            42,
+            66,
+            113,
+            24,
+            15
+          ]
+        },
+        "waffleiron40-340-s01-u01": {
+          "value": 0.7535833333333334,
+          "err": 0.029724441416698156,
+          "n_seeds": 5,
+          "seeds_used": [
+            24,
+            66,
+            42,
+            113,
+            15
+          ]
+        }
+      },
+      "xhand": {
+        "ketchup30-130-s01-u01": {
+          "value": 0.9038375000000001,
+          "err": 0.00207687039195998,
+          "n_seeds": 5,
+          "seeds_used": [
+            42,
+            113,
+            66,
+            24,
+            15
+          ]
+        },
+        "box30-230-s01-u01": {
+          "value": 0.8652546875,
+          "err": 0.014366300288674699,
+          "n_seeds": 5,
+          "seeds_used": [
+            42,
+            113,
+            15,
+            24,
+            66
+          ]
+        },
+        "mixer30-200-s01-u01": {
+          "value": 0.8985275735294117,
+          "err": 0.005271600783080648,
+          "n_seeds": 5,
+          "seeds_used": [
+            24,
+            15,
+            42,
+            113,
+            66
+          ]
+        },
+        "ketchup40-340-s01-u02": {
+          "value": 0.7235427083333332,
+          "err": 0.04403208400065767,
+          "n_seeds": 5,
+          "seeds_used": [
+            24,
+            66,
+            15,
+            113,
+            42
+          ]
+        },
+        "mixer40-340-s01-u01": {
+          "value": 0.66234375,
+          "err": 0.06950329597250525,
+          "n_seeds": 5,
+          "seeds_used": [
+            15,
+            113,
+            66,
+            42,
+            24
+          ]
+        },
+        "notebook40-340-s02-u02": {
+          "value": 0.8904770833333334,
+          "err": 0.012263285613779805,
+          "n_seeds": 5,
+          "seeds_used": [
+            66,
+            24,
+            42,
+            113,
+            15
+          ]
+        },
+        "waffleiron40-340-s01-u01": {
+          "value": 0.8032343750000001,
+          "err": 0.012736895669067955,
+          "n_seeds": 5,
+          "seeds_used": [
+            113,
+            42,
+            15,
+            24,
+            66
+          ]
+        }
+      },
+      "schunk_hand": {
+        "ketchup30-130-s01-u01": {
+          "value": 0.8972187500000001,
+          "err": 0.008452367687887805,
+          "n_seeds": 5,
+          "seeds_used": [
+            113,
+            66,
+            42,
+            24,
+            15
+          ]
+        },
+        "box30-230-s01-u01": {
+          "value": 0.8588140624999999,
+          "err": 0.005413502360995154,
+          "n_seeds": 5,
+          "seeds_used": [
+            24,
+            15,
+            66,
+            42,
+            113
+          ]
+        },
+        "mixer30-200-s01-u01": {
+          "value": 0.9030514705882353,
+          "err": 0.013806638616846393,
+          "n_seeds": 5,
+          "seeds_used": [
+            113,
+            24,
+            15,
+            42,
+            66
+          ]
+        },
+        "ketchup40-340-s01-u02": {
+          "value": 0.7001239583333334,
+          "err": 0.04830396008053382,
+          "n_seeds": 5,
+          "seeds_used": [
+            42,
+            15,
+            113,
+            24,
+            66
+          ]
+        },
+        "mixer40-340-s01-u01": {
+          "value": 0.6683072916666666,
+          "err": 0.03270344775083612,
+          "n_seeds": 5,
+          "seeds_used": [
+            15,
+            24,
+            66,
+            42,
+            113
+          ]
+        },
+        "notebook40-340-s02-u02": {
+          "value": 0.6964197916666667,
+          "err": 0.08991913951216192,
+          "n_seeds": 5,
+          "seeds_used": [
+            42,
+            113,
+            24,
+            66,
+            15
+          ]
+        },
+        "waffleiron40-340-s01-u01": {
+          "value": 0.41377395833333336,
+          "err": 0.1047725468143837,
+          "n_seeds": 5,
+          "seeds_used": [
+            24,
+            15,
+            113,
+            42,
+            66
+          ]
+        }
+      }
+    }
+  },
+  "run_paths": {
+    "method1": {
+      "inspire_hand": {
+        "ketchup30-130-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_268qn2d1",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_2d3rp2ig",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_spbmg9x1",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_tgsj793y",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_u8bqm6oy"
+        ],
+        "box30-230-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_11cz7scu",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_17abodfq",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_46rvtlui",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_6fyf9pa5",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_t5t6jlrf"
+        ],
+        "mixer30-200-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_5qpbphae",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_d0ituxni",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_m3lpkp3k",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_szu638vw",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_y8ll4i7r"
+        ],
+        "ketchup40-340-s01-u02": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_8vv33laq",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_9sw1zjch",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_drql7k0i",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_hxqok6so",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_xzlaapml"
+        ],
+        "mixer40-340-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_6s7xzngt",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_99ufimwk",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_qyvixdp9",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_si5tk4kp",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_sn2015t9"
+        ],
+        "notebook40-340-s02-u02": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_76plddol",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_bowuz1jx",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_eyy0kfb0",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_k63c9a0d",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_m3aealr6"
+        ],
+        "waffleiron40-340-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_19j6fxeb",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_mmusio7v",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_qimsgill",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_s4gh7fuv",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/inspire-f424-low5-imi3_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.3_con3.0_bc0.3_t3bk2wa8"
+        ]
+      },
+      "allegro_hand": {
+        "ketchup30-130-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_1pf79v1q",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_b2aqykx7",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_bulq3ftx",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_o0lthko1",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_z6u2ehml"
+        ],
+        "box30-230-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_cwz81cc5",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_e9xddslw",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_k5faruaf",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_pwgtcufu",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_sczlk8j5"
+        ],
+        "mixer30-200-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_5uahpsr3",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_hkakhz08",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_mbgfl3xh",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_o5si19mt",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_x59w2ip6"
+        ],
+        "ketchup40-340-s01-u02": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_2pr8wlpl",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_6j66pga0",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_lmz3k19b",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_wq5y31b1",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_xcfjevoo"
+        ],
+        "mixer40-340-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_28fhnqb1",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_b05japgj",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_jm1xybsg",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_mcxe0fy7",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_zrl3pv3b"
+        ],
+        "notebook40-340-s02-u02": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_0cqdmqrq",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_336bbadc",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_c454sn0k",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_gtpnl5bc",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_rf9h54t0"
+        ],
+        "waffleiron40-340-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_n7voblqb",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_uea2fbaa",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_wct3gi3f",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_wqh0zncq",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/allegro-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_zubxfaax"
+        ]
+      },
+      "xhand": {
+        "ketchup30-130-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_7gf9ifye",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_jh32ez8d",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_kprb0boz",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_u4y1gtp8",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_ynj0d27o"
+        ],
+        "box30-230-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_aab917u2",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_clafiies",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_iiro13ne",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_lbfcfcfr",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_y5fbpruy"
+        ],
+        "mixer30-200-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_ajgnx27l",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_btyi76o7",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_f2c7yexb",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_g6e03bz9",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_ppve14sh"
+        ],
+        "ketchup40-340-s01-u02": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_083oftnj",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_5t8cy07w",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_fkzllfhb",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_gp9dgdgb",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_qenk5ifd"
+        ],
+        "mixer40-340-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_c07f9p7f",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_ds9y89xy",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_jrubf7dw",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_k2p0azax",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_ofd03y46"
+        ],
+        "notebook40-340-s02-u02": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_6bb3irk8",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_igcx2rli",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_oqewxwcb",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_re4z1kaf",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_x4zsrmfc"
+        ],
+        "waffleiron40-340-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_4piggnxz",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_f3dhnlox",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_koiawydn",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_razaj2gh",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/xhand-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_wjuyed7p"
+        ]
+      },
+      "schunk_hand": {
+        "ketchup30-130-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_2la8p4lp",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_934olycr",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_kf1ifla2",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_skp2jlt4",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_ketchup30-130-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_zhp946tf"
+        ],
+        "box30-230-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_559r6r5m",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_id4r8h6p",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_qzsmlzne",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_vpzrrfg3",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_box30-230-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_wbq4y4bb"
+        ],
+        "mixer30-200-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_45og92m5",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_4mrjjeuu",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_sx6qa8cl",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_woeytsja",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer30-200-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_yguznxoh"
+        ],
+        "ketchup40-340-s01-u02": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_dwb0bxzb",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_kwqovkoc",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_m453harq",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_mfzmihtb",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_ketchup40-340-s01-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_w43w7cdq"
+        ],
+        "mixer40-340-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_9adajn7l",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_idg0wx5v",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_jh7slthc",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_lxsv9q0u",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-fast1-420_mixer40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_zv734akx"
+        ],
+        "notebook40-340-s02-u02": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_1pg0vts7",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_9g6wzjfd",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_j4yv952y",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_srpxcx6u",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_notebook40-340-s02-u02_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_wllsoq5t"
+        ],
+        "waffleiron40-340-s01-u01": [
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_1975r670",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_9mxb14za",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_fh3698v9",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_yhok5mt9",
+          "/home/mandi/dexmachina/dexmachina_main_results_data/runs/schunk-f422-low5-th0_waffleiron40-340-s01-u01_B12000_hybrid_thres0.5_ho16_imi0.2_con2.0_bc0.2_yofb4exa"
+        ]
+      }
+    }
+  }
+}

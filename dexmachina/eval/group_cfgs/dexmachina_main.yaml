@@ -1,0 +1,114 @@
+object_clips:
+  - ketchup30-130-s01-u01
+  - box30-230-s01-u01
+  - mixer30-200-s01-u01
+  - ketchup40-340-s01-u02
+  - mixer40-340-s01-u01
+  - notebook40-340-s02-u02
+  - waffleiron40-340-s01-u01
+
+filter_conditions:
+  env_kwargs.robot_cfgs.left.action_mode: [hybrid, kinematic]
+
+methods:
+  method1:
+    name: "DexMachina"
+    conditions:
+      - key: env_kwargs.robot_cfgs.left.hybrid_scales
+        value: [0.1, 1]
+      - key: env_kwargs.curriculum_cfg.schedule
+        value: uniform
+    or_conditions:
+      - key: env_kwargs.object_cfgs.box.actuated
+        value: True
+      - key: env_kwargs.object_cfgs.mixer.actuated
+        value: True
+      - key: env_kwargs.object_cfgs.ketchup.actuated
+        value: True
+      - key: env_kwargs.object_cfgs.waffleiron.actuated
+        value: True
+      - key: env_kwargs.object_cfgs.notebook.actuated
+        value: True
+    condition_sets:
+      - name: "10k curr low6"
+        keywords: [fast1-420]
+        and:
+          - key: env_kwargs.curriculum_cfg.lower_ratios.kp
+            value: 0.6
+          - key: env_kwargs.robot_cfgs.left.hybrid_scales
+            value: [0.1, 1]
+          - key: env_kwargs.reward_cfg.imi_rew_weight
+            value: 0.2
+          - key: env_kwargs.reward_cfg.contact_rew_weight
+            value: 2
+        or:
+          - key: env_kwargs.env_cfg.episode_length
+            value: 200
+          - key: env_kwargs.env_cfg.episode_length
+            value: 170
+          - key: env_kwargs.env_cfg.episode_length
+            value: 100
+          - key: env_kwargs.object_cfgs.mixer.actuated
+            value: True
+      - name: "13k inspire imi3"
+        keywords: [f424-low5-imi3]
+        and:
+          - key: env_kwargs.robot_cfgs.left.hybrid_scales
+            value: [0.1, 1]
+          - key: env_kwargs.curriculum_cfg.lower_ratios.kp
+            value: 0.5
+          - key: env_kwargs.reward_cfg.imi_rew_weight
+            value: 0.3
+          - key: env_kwargs.robot_cfgs.left.name
+            value: inspire_hand_left
+      - name: "f422 low5 th0 13k"
+        keywords: [f422]
+        and:
+          - key: env_kwargs.curriculum_cfg.lower_ratios.kp
+            value: 0.5
+          - key: env_kwargs.reward_cfg.imi_rew_weight
+            value: 0.2
+          - key: env_kwargs.reward_cfg.contact_rew_weight
+            value: 2
+          - key: env_kwargs.robot_cfgs.left.hybrid_scales
+            value: [0.1, 1]
+          - key: env_kwargs.env_cfg.episode_length
+            value: 300
+          - key: env_kwargs.curriculum_cfg.rew_thresholds.imi
+            value: 0
+        or:
+          - key: env_kwargs.robot_cfgs.left.name
+            value: xhand_left
+          - key: env_kwargs.robot_cfgs.left.name
+            value: schunk_hand_left
+          - key: env_kwargs.robot_cfgs.left.name
+            value: allegro_hand_left
+
+hand_types:
+  inspire_hand:
+    name: "Inspire Hand"
+    conditions:
+      - key: env_kwargs.robot_cfgs.left.name
+        value: inspire_hand_left
+  allegro_hand:
+    name: "Allegro Hand"
+    conditions:
+      - key: env_kwargs.robot_cfgs.left.name
+        value: allegro_hand_left
+  xhand:
+    name: "XHand"
+    conditions:
+      - key: env_kwargs.robot_cfgs.left.name
+        value: xhand_left
+  schunk_hand:
+    name: "Schunk Hand"
+    conditions:
+      - key: env_kwargs.robot_cfgs.left.name
+        value: schunk_hand_left
+
+seeds:
+  - 42
+  - 24
+  - 66
+  - 15
+  - 113
