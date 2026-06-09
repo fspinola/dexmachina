@@ -108,8 +108,15 @@ with an FK round-trip assert (≤1e-7). `kpt_pos`/`wrist_pose` are then obtained
 **Per-side base alignment.** The retargeting URDF and DexMachina's 6-DoF URDF can use different
 `base_link` conventions (notably Inspire, ~[-91, 0, 178]°). The converter computes a constant
 `T_mybase_dexbase` via Procrustes on matched-qpos fingertips and applies it when the fit is rigid
-(residual ≤ 10 mm); otherwise it falls back to identity. Allegro RH aligns at 0 mm; Inspire at
-~1.9 mm; Allegro LH falls back to identity (the mirrored left URDFs differ at the finger level).
+(residual ≤ 10 mm); otherwise it falls back to identity. Allegro RH/LH align at identity; Inspire
+at ~1.9 mm.
+
+**Allegro-left joint convention.** DexMachina's `allegro_hand_left_6dof.urdf` is the *same physical
+left hand* as the retargeting URDF, but labels index↔ring oppositely and uses the opposite
+abduction-axis sign (verified by FK: the four fingers match to 0 mm under that remap; only a ~10 mm
+thumb-mount offset remains). The converter applies this `{dex_joint: (my_joint, sign)}` remap for
+Allegro-left (`finger_convention_remap`), so left-hand fingertip fidelity matches the right
+(~7–10 mm). No URDF or collision-config change is needed.
 
 ### Producing references
 
@@ -160,11 +167,13 @@ graph poses. To use the full hybrid+contact recipe, regenerate them from the gra
 
 - All four action modes (`kinematic`, `residual`, `hybrid`, `absolute`) load and consume the
   graph references; validated by headless kinematic playback (correct bimanual grasp cycles).
-- Allegro LH world-fingertip error is higher than RH (~25–35 mm vs ~6–15 mm): the patched
-  left URDF and DexMachina's `allegro_hand_left_6dof.urdf` differ in finger convention, so no
-  rigid base transform fully aligns them — it renders correctly but is less accurate than RH.
-- Inspire references differ slightly from the human (~13–25 mm) due to DexMachina's mimic ratios
-  differing from the retargeting URDF's; inherent to the hand model, acceptable for a reference.
+- Allegro LH fingertip fidelity matches RH (~7–10 mm) via the `finger_convention_remap` above;
+  a residual ~10 mm thumb-mount offset between the two URDFs' thumbs is the only difference left.
+- Inspire references differ slightly from the human (~13–25 mm) due to DexMachina's mimic (joint
+  coupling) ratios differing from the retargeting URDF's. The reference is still self-consistent
+  and exactly reachable by the simulated hand (so RL is unaffected); only human-fidelity of the
+  distal finger segments is slightly reduced. The ratios model the real Inspire hardware, so they
+  are left as-is; native re-retargeting on DexMachina's URDF would remove this if needed.
 
 ## Citation
 This codebase is released with the following preprint:
