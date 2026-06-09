@@ -116,7 +116,9 @@ left hand* as the retargeting URDF, but labels index↔ring oppositely and uses 
 abduction-axis sign (verified by FK: the four fingers match to 0 mm under that remap; only a ~10 mm
 thumb-mount offset remains). The converter applies this `{dex_joint: (my_joint, sign)}` remap for
 Allegro-left (`finger_convention_remap`), so left-hand fingertip fidelity matches the right
-(~7–10 mm). No URDF or collision-config change is needed.
+(~7–10 mm). No collision-config change is needed. Separately, the ~10 mm thumb offset was a genuine
+incomplete-mirror bug in `allegro_hand_left_6dof.urdf` (`joint_13` had its axis mirrored but not its
+origin `y`); fixed by one number (`0.005` → `-0.005`), so the thumb now mirrors correctly too.
 
 ### Producing references
 
@@ -167,8 +169,8 @@ graph poses. To use the full hybrid+contact recipe, regenerate them from the gra
 
 - All four action modes (`kinematic`, `residual`, `hybrid`, `absolute`) load and consume the
   graph references; validated by headless kinematic playback (correct bimanual grasp cycles).
-- Allegro LH fingertip fidelity matches RH (~7–10 mm) via the `finger_convention_remap` above;
-  a residual ~10 mm thumb-mount offset between the two URDFs' thumbs is the only difference left.
+- Allegro LH fingertip fidelity matches RH (~6–10 mm) via the `finger_convention_remap` plus the
+  one-line thumb-origin mirror fix in `allegro_hand_left_6dof.urdf`.
 - Inspire references sit ~13–25 mm from the human. This is mostly **inherent retargeting quality**
   (Inspire is an underactuated 6-DoF hand, so it matches the human less closely than the 16-DoF
   Allegro) — the mimic (joint-coupling) ratio difference between the two URDFs adds only ~2 mm (the

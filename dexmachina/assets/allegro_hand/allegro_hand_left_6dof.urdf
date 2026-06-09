@@ -558,7 +558,7 @@
     <limit effort="10" lower="-0.105" upper="1.163" velocity="3.14"/>
     <parent link="link_12.0"/>
     <child link="link_13.0"/>
-    <origin xyz="-0.027 0.005 0.0399"/>
+    <origin xyz="-0.027 -0.005 0.0399"/>
   </joint>
   <link name="link_14.0">
     <inertial>

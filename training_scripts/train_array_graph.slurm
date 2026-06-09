@@ -1,8 +1,9 @@
 #!/bin/bash
 # Train DexMachina RL on MY graph kinematic references (--retarget_name graph),
 # CONTACT OFF (no --use_retarget_contact, -con 0). Otherwise the paper hybrid recipe.
-# Array over the 7 paper experiments x 2 hands (14 tasks) listed in runs_graph.tsv.
-# Experiments: ketchup-100, box-200, mixer-170, ketchup-300, mixer-300, notebook-300, waffleiron-300.
+# Array over the 7 paper experiments x 2 hands (14 tasks) listed in runs_graph.tsv:
+#   ketchup-30-130-s01-u01, box-30-230-s01-u01, mixer-30-200-s01-u01, ketchup-40-340-s01-u02,
+#   mixer-40-340-s01-u01, notebook-40-340-s02-u02, waffleiron-40-340-s01-u01.
 #SBATCH -A ilc@h100
 #SBATCH -C h100
 #SBATCH --gres=gpu:1
