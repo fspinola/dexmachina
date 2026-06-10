@@ -592,11 +592,14 @@ class BaseRobot:
             upper_margin = upper_limit - res_qpos  # shape (n_envs, 1)
             lower_margin = res_qpos - lower_limit  # shape (n_envs, 1)
             if self.res_cap:
+                # cap the wrist residual to +/- hybrid_scales (symmetric). lower_margin keeps the
+                # same sign convention as the default branch (res - lower_limit, positive), since
+                # `scaled = a * lower_margin` already flips sign for a < 0.
                 scale_trans, scale_rot = self.hybrid_scales
                 upper_margin[:, self.wrist_dof_idxs[:3]] = scale_trans
                 upper_margin[:, self.wrist_dof_idxs[3:]] = scale_rot
-                lower_margin[:, self.wrist_dof_idxs[:3]] = -scale_trans
-                lower_margin[:, self.wrist_dof_idxs[3:]] = -scale_rot
+                lower_margin[:, self.wrist_dof_idxs[:3]] = scale_trans
+                lower_margin[:, self.wrist_dof_idxs[3:]] = scale_rot
             # joint_actions is -1, 1, make it center around init_qpos
             upper = joint_actions >= 0 
             scaled = torch.where(upper, joint_actions * upper_margin, joint_actions * lower_margin) # joint_actions has sign +-1!!
