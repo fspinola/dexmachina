@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH -A ilc@a100
 #SBATCH -C a100
+#SBATCH --qos=qos_gpu_a100-dev
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=02:00:00
 #SBATCH --job-name=dexmachina_eval
 #SBATCH --output=slurm_logs/slurm-eval-%A_%a.out
-#SBATCH --array=1-30%6
+#SBATCH --array=1-30%8
 
 set -euo pipefail
 
@@ -63,6 +64,6 @@ echo "Detected hand: $HAND"
 # Run evaluation
 # -----------------------------
 uv run python dexmachina/rl/eval_rl_games.py \
-  -B 1 \
+  -B 20 \
   --checkpoint "$CKPT" \
   -rv
