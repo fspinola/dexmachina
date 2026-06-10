@@ -104,9 +104,11 @@ class BaseRobot:
         )
         
         self.action_mode = robot_cfg.get("action_mode", "residual")
-        assert self.action_mode in ["residual", "absolute", "relative", "hybrid", "kinematic"], f"Invalid action mode {self.action_mode}"
+        assert self.action_mode in ["residual", "absolute", "relative", "hybrid", "kinematic", "ff_residual"], f"Invalid action mode {self.action_mode}"
         self.hybrid_scales = robot_cfg.get("hybrid_scales", (0.04, 0.5))
         self.res_cap = robot_cfg.get("res_cap", False)
+        # ff_residual conditions the policy on the next-frame reference (extra obs); off otherwise.
+        self.observe_reference = (self.action_mode == "ff_residual")
         self.num_envs = num_envs
         self.scene = scene
         assert not self.initialized, "Robot already initialized"
@@ -536,8 +538,11 @@ class BaseRobot:
             ),
             "dof_vel": self.dof_vel,
             "kpt_pos": self.kpt_pos.view(self.num_envs, -1),
-            "wrist_pose": self.wrist_pose, 
+            "wrist_pose": self.wrist_pose,
         }
+        if self.observe_reference: # ff_residual (#3): condition the policy on the next-frame reference
+            ff_demo_t = torch.clamp(self.episode_length_buf + 1, max=self.residual_num_frames - 1)
+            obs_dict["ff_ref_err"] = self.residual_qpos[ff_demo_t] - self.dof_pos
 
         for k, scale in self.obs_scale.items():
             if k in obs_dict:
@@ -545,13 +550,15 @@ class BaseRobot:
         return obs_dict  
     
     def compute_obs_dim(self): 
-        dims = dict( 
-            qpos_dim = self.ndof,   
+        dims = dict(
+            qpos_dim = self.ndof,
             qpos_target_dim = self.ndof,
             qvel_dim = self.ndof,
-            kpt_dim = int(len(self.kpt_link_names) * 3),  
-            wrist_dim = 7, 
+            kpt_dim = int(len(self.kpt_link_names) * 3),
+            wrist_dim = 7,
         )
+        if self.observe_reference: # ff_residual (#3): next-frame reference error, shape (ndof,)
+            dims["ff_ref_dim"] = self.ndof
         return sum(dims.values()), dims
 
     def translate_actions(self, actions, episode_length_buf):
@@ -564,15 +571,22 @@ class BaseRobot:
         lower_limit = self.dof_limits[:, 0] # shape shape (n_envs,) 
         if self.residual_qpos is not None:
             demo_t = torch.where(
-                episode_length_buf >= self.residual_num_frames, 
-                self.residual_num_frames - 1, 
+                episode_length_buf >= self.residual_num_frames,
+                self.residual_num_frames - 1,
                 episode_length_buf
                 )
+            if self.action_mode == "ff_residual":
+                # feed-forward (#1): anchor on the NEXT reference frame, matching the t+1 reward target.
+                demo_t = torch.where(
+                    episode_length_buf + 1 >= self.residual_num_frames,
+                    self.residual_num_frames - 1,
+                    episode_length_buf + 1,
+                    )
             res_qpos = self.residual_qpos[demo_t] # shape (n_envs, ndof)
             self.curr_res_qpos[:] = res_qpos
             
-        if self.action_mode == "residual":
-            assert self.residual_qpos is not None and self.residual_num_frames is not None, "Residual qpos not set"   
+        if self.action_mode in ("residual", "ff_residual"): # ff_residual = residual scaling on the next-frame ref (demo_t shifted above)
+            assert self.residual_qpos is not None and self.residual_num_frames is not None, "Residual qpos not set"
             # NOTE there's an implicit broadcast here bc actions is shape (n_envs, ndof). init_qpos is also shape (ndof,)
             # scale action to add to centering default init pos 
             upper_margin = upper_limit - res_qpos  # shape (n_envs, 1)
@@ -614,9 +628,9 @@ class BaseRobot:
             finger_targets = lower_limit[self.finger_dof_idxs] + (upper_limit[self.finger_dof_idxs] - lower_limit[self.finger_dof_idxs]) * (finger_actions + 1) / 2
             
             joint_targets = torch.concatenate([wrist_trans, wrist_rot, finger_targets], dim=-1)
-            
+
         else:
-            raise NotImplementedError  
+            raise NotImplementedError
         # ignore the mimic values!
         target_dof_pos = joint_targets[:, self.joint_from_idxs] * self.joint_multipliers # shape (n_envs, ndof), 
         target_dof_pos = torch.clamp(target_dof_pos, lower_limit, upper_limit) 
@@ -655,8 +669,8 @@ class BaseRobot:
         if episode_start is not None:
             assert episode_start.shape[0] == len(env_idxs), f"episode_start.shape={episode_start.shape} != {len(env_idxs)}" 
         # reset value buffers 
-        if episode_start is not None and self.action_mode in ['residual', 'kinematic'] and self.residual_qpos is not None:
-            # reset to residual qpos 
+        if episode_start is not None and self.action_mode in ['residual', 'kinematic', 'ff_residual'] and self.residual_qpos is not None:
+            # reset to residual qpos
             init_qpos = self.residual_qpos[episode_start] # shape (n_envs, ndof)
         else:
             init_qpos = self.init_qpos[env_idxs] 

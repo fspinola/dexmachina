@@ -251,7 +251,7 @@ def get_common_argparser():
     parser.add_argument('--show_markers', action='store_true', help='Whether to show contact markers')
     parser.add_argument('--interp', type=int, default=1, help='Interpolation multiplier for the demo data')
     parser.add_argument('--seed', type=int, default=42) 
-    parser.add_argument('--action_mode', '-am', default='residual', choices=['residual', 'absolute', 'relative', 'hybrid','kinematic'])
+    parser.add_argument('--action_mode', '-am', default='residual', choices=['residual', 'absolute', 'relative', 'hybrid','kinematic','ff_residual'])
     parser.add_argument('--show_kpts', action='store_true', help='Whether to show keypoints')
     parser.add_argument('--res_cap', action='store_true')
     parser.add_argument('--hybrid_scales', type=float, nargs='+', default=[0.04, 0.5])
