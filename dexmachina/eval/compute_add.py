@@ -1,14 +1,17 @@
 import argparse
 import json
 import os
+import re
 from collections import defaultdict
 from os.path import join
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict, Optional, Set
 
 import numpy as np
 import torch
 import genesis as gs
 
+from dexmachina.asset_utils import get_asset_path
 from dexmachina.envs.object import ArticulatedObject, get_arctic_object_cfg
 from dexmachina.eval.utils import (
     ensure_dir,
@@ -150,18 +153,55 @@ def compute_add_stats(add_data: Dict[str, np.ndarray], thresholds) -> Dict[str, 
     )
 
 
+def list_arctic_objects() -> Set[str]:
+    """Names of the ARCTIC objects available on disk (one sub-dir per object)."""
+    arctic_dir = str(get_asset_path("arctic"))
+    if not os.path.isdir(arctic_dir):
+        return set()
+    return {
+        name
+        for name in os.listdir(arctic_dir)
+        if os.path.isdir(os.path.join(arctic_dir, name))
+    }
+
+
+def infer_object_name_from_path(eval_path: str, valid_objects: Set[str]) -> Optional[str]:
+    """Recover the object name from the run directory when no config.yaml exists.
+
+    Run dirs encode the clip, e.g.
+        .../allegro-20012026_box30-230-s01-u01_B12000_.../..._eval/eval_ep0.npy
+    so the leading letters of a clip token give the object ("box"). Every token
+    is validated against the known ARCTIC objects, so experiment tags such as
+    "graphnc", "hybrid", "allegro" or "inspire" are skipped automatically and
+    the same logic works for the graph, allegro and inspire runs alike.
+    """
+    path = Path(eval_path).resolve()
+    for parent in list(path.parents):
+        for token in re.split(r"[_\-]", parent.name):
+            match = re.match(r"([a-zA-Z]+)", token)
+            if match and match.group(1) in valid_objects:
+                return match.group(1)
+    return None
+
+
 def infer_object_name(eval_path: str, override: Optional[str] = None) -> str:
     if override:
         return override
     cfg_path = find_config_path(eval_path)
-    if not cfg_path:
-        raise ValueError(f"Could not find config.yaml for {eval_path}")
-    cfg = load_config(cfg_path)
-    clip = extract_clip(cfg)
-    obj_name = infer_object_name_from_clip(clip)
-    if not obj_name:
-        raise ValueError(f"Could not infer object name from clip in {cfg_path}")
-    return obj_name
+    if cfg_path:
+        cfg = load_config(cfg_path)
+        clip = extract_clip(cfg)
+        obj_name = infer_object_name_from_clip(clip)
+        if obj_name:
+            return obj_name
+    # No config.yaml (or no clip inside it): fall back to the run directory name,
+    # which encodes the clip for the allegro/inspire (and graph) eval runs.
+    obj_name = infer_object_name_from_path(eval_path, list_arctic_objects())
+    if obj_name:
+        return obj_name
+    raise ValueError(
+        f"Could not find config.yaml or infer object name from path for {eval_path}"
+    )
 
 
 def compute_for_eval(
@@ -199,53 +239,4 @@ def compute_for_eval(
 
     if os.path.exists(out_path) and not overwrite:
         print(f"Using existing {out_path}")
-        add_data = np.load(out_path, allow_pickle=True).item()
-    else:
-        np.save(out_path, add_data)
-        print(f"Wrote {out_path}")
-
-    if not os.path.exists(stats_path) or overwrite:
-        thresholds = list(np.arange(0.01, 0.1, 0.01))
-        stats = compute_add_stats(add_data, thresholds)
-        stats["eval_path"] = eval_path
-        with open(stats_path, "w") as f:
-            json.dump(stats, f, indent=2)
-        print(f"Wrote eval stats to: \n{stats_path}")
-    
-    del scene
-    del obj 
-    return 
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input", required=True, help="Eval file or root directory")
-    parser.add_argument("--pattern", default="**/eval_ep*.npy")
-    parser.add_argument("--obj_name", default=None)
-    parser.add_argument("--out_name", default="add.npy")
-    parser.add_argument("--stats_name", default="add_stats.json")
-    parser.add_argument("--overwrite", action="store_true")
-    parser.add_argument("--output_cache", action="store_true")
-    parser.add_argument("--cache_dir", default="dexmachina/eval/sub_verts")
-    args = parser.parse_args()
-
-    eval_files = list_eval_files(args.input, args.pattern)
-    if not eval_files:
-        raise ValueError(f"No eval files found for {args.input}")
-    print("Found eval files:")
-    print("\n\n".join(eval_files))
-
-    gs.init(backend=gs.gpu, logging_level="warning") # NOTE: init only once
-    for eval_path in sorted(eval_files):
-        compute_for_eval(
-            eval_path=eval_path,
-            obj_name=args.obj_name,
-            out_name=args.out_name,
-            stats_name=args.stats_name,
-            overwrite=args.overwrite,
-            output_cache=args.output_cache,
-            cache_dir=args.cache_dir,
-        )
-
-
-if __name__ == "__main__":
-    main()
+        add_data = np.load(out_path, allow_p
