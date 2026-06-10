@@ -239,4 +239,54 @@ def compute_for_eval(
 
     if os.path.exists(out_path) and not overwrite:
         print(f"Using existing {out_path}")
-        add_data = np.load(out_path, allow_p
+        add_data = np.load(out_path, allow_pickle=True).item()
+    else:
+        np.save(out_path, add_data)
+        print(f"Wrote {out_path}")
+
+    if not os.path.exists(stats_path) or overwrite:
+        thresholds = list(np.arange(0.01, 0.1, 0.01))
+        stats = compute_add_stats(add_data, thresholds)
+        stats["eval_path"] = eval_path
+        with open(stats_path, "w") as f:
+            json.dump(stats, f, indent=2)
+        print(f"Wrote eval stats to: \n{stats_path}")
+
+    del scene
+    del obj
+    return
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", required=True, help="Eval file or root directory")
+    parser.add_argument("--pattern", default="**/eval_ep*.npy")
+    parser.add_argument("--obj_name", default=None)
+    parser.add_argument("--out_name", default="add.npy")
+    parser.add_argument("--stats_name", default="add_stats.json")
+    parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--output_cache", action="store_true")
+    parser.add_argument("--cache_dir", default="dexmachina/eval/sub_verts")
+    args = parser.parse_args()
+
+    eval_files = list_eval_files(args.input, args.pattern)
+    if not eval_files:
+        raise ValueError(f"No eval files found for {args.input}")
+    print("Found eval files:")
+    print("\n\n".join(eval_files))
+
+    gs.init(backend=gs.gpu, logging_level="warning")  # NOTE: init only once
+    for eval_path in sorted(eval_files):
+        compute_for_eval(
+            eval_path=eval_path,
+            obj_name=args.obj_name,
+            out_name=args.out_name,
+            stats_name=args.stats_name,
+            overwrite=args.overwrite,
+            output_cache=args.output_cache,
+            cache_dir=args.cache_dir,
+        )
+
+
+if __name__ == "__main__":
+    main()
