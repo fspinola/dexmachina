@@ -1,0 +1,8 @@
+logs/rl_games/allegro_hand/allegro-graphnc_box30-230-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_bc0.3/nn/allegro_hand.pth
+logs/rl_games/allegro_hand/allegro-graphnc_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_bc0.3/nn/allegro_hand.pth
+logs/rl_games/allegro_hand/allegro-graphnc_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_bc0.3/nn/allegro_hand.pth
+logs/rl_games/allegro_hand/allegro-graphnc_mixer30-200-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_bc0.3/nn/allegro_hand.pth
+logs/rl_games/inspire_hand/inspire-graphnc_box30-230-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_bc0.3/nn/inspire_hand.pth
+logs/rl_games/inspire_hand/inspire-graphnc_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_bc0.3/nn/inspire_hand.pth
+logs/rl_games/inspire_hand/inspire-graphnc_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_bc0.3/nn/inspire_hand.pth
+logs/rl_games/inspire_hand/inspire-graphnc_mixer30-200-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_bc0.3/nn/inspire_hand.pth

@@ -45,7 +45,7 @@ cd "$ROOT"
 # -----------------------------
 # Select checkpoint
 # -----------------------------
-CKPT=$(sed -n "${SLURM_ARRAY_TASK_ID}p" eval_scripts/eval_checkpoints.txt)
+CKPT=$(sed -n "${SLURM_ARRAY_TASK_ID}p" eval_scripts/eval_checkpoints_graph.txt)
 
 if [[ -z "$CKPT" ]]; then
   echo "No checkpoint found for task ${SLURM_ARRAY_TASK_ID}"
