@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "learned-retargeter-inference"
+version = "0.1.0"
+description = "Inference-only wrapper for the learned MANO->robot retargeter. Drop-in replacement for an imitator network."
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "torch>=2.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+sources = ["."]
+include = ["*.py"]
