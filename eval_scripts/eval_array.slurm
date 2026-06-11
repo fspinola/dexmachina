@@ -46,7 +46,10 @@ cd "$ROOT"
 # -----------------------------
 # Select checkpoint
 # -----------------------------
-CKPT=$(sed -n "${SLURM_ARRAY_TASK_ID}p" eval_scripts/eval_checkpoints_graph.txt)
+# List of checkpoints to eval (one path per line). Override per experiment, e.g.:
+#   EVAL_LIST=eval_scripts/eval_checkpoints_graph_ffcon.txt sbatch --array=1-10 eval_scripts/eval_array.slurm
+EVAL_LIST="${EVAL_LIST:-eval_scripts/eval_checkpoints_graph.txt}"
+CKPT=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$EVAL_LIST")
 
 if [[ -z "$CKPT" ]]; then
   echo "No checkpoint found for task ${SLURM_ARRAY_TASK_ID}"

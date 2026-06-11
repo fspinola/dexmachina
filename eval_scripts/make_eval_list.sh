@@ -27,4 +27,4 @@ sort -o "$OUT" "$OUT"
 n=$(wc -l < "$OUT")
 echo "wrote $n checkpoint(s) to $OUT"
 cat "$OUT"
-echo "-> set the eval array to 1-$n (e.g. sbatch --array=1-$n eval_scripts/eval_array_graph_ffcon.slurm)"
+echo "-> eval with: EVAL_LIST=$OUT sbatch --array=1-$n eval_scripts/eval_array.slurm"
