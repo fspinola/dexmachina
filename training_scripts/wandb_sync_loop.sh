@@ -7,6 +7,7 @@
 #
 # Optional arg overrides the log root (default matches the slurm scripts).
 set -u
+export PYTHONWARNINGS="${PYTHONWARNINGS:-ignore::UserWarning}"  # hush the pkg_resources deprecation spam
 LOG_ROOT="${1:-$WORK/retargeting/dexmachina_logs}"
 # wandb writes offline runs to $WANDB_DIR/wandb/offline-run-*; the slurms set
 # WANDB_DIR=$LOG_ROOT/wandb, so the runs live at $LOG_ROOT/wandb/wandb. Point sync at the
