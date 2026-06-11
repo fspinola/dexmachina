@@ -15,7 +15,9 @@
 #SBATCH --time=02:00:00
 #SBATCH --job-name=dexmachina_graphffcon_dev
 #SBATCH --output=slurm_logs/slurm-graphffcon-dev-%A_%a.out
-#SBATCH --array=1-14%10
+# Dev QOS caps SUBMITTED jobs at 10/user and each array task counts at submission,
+# so default to the first 10; run the rest afterwards with: sbatch --array=11-14 <this file>
+#SBATCH --array=1-10%10
 
 set -euo pipefail
 
