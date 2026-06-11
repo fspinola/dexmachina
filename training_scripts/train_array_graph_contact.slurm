@@ -8,14 +8,18 @@
 #   mixer-40-340-s01-u01, notebook-40-340-s02-u02, waffleiron-40-340-s01-u01.
 #SBATCH -A ilc@h100
 #SBATCH -C h100
+#SBATCH --qos=qos_gpu_h100-dev
 #SBATCH --gres=gpu:1
 # 1 of 4 GPUs -> request 1/4 of the 96-core node (24 cores -> ~1/4 RAM); do NOT use
 # --exclusive (it reserves the whole node incl. the other 3 GPUs -> long queue + waste).
 #SBATCH --cpus-per-task=24
-#SBATCH --time=10:00:00
-#SBATCH --job-name=dexmachina_graphcon
-#SBATCH --output=slurm_logs/slurm-graphcon-%A_%a.out
-#SBATCH --array=1-14%8
+#SBATCH --time=02:00:00
+#SBATCH --job-name=dexmachina_graphcon_dev
+#SBATCH --output=slurm_logs/slurm-graphcon-dev-%A_%a.out
+# H100 dev QOS: 2h max. Dev QOS caps submitted jobs per user (~10) and each array task
+# counts at submission, so default to 1-10; run the rest with: sbatch --array=11-14 <this file>.
+# Verify the exact name/limits once: sacctmgr show qos qos_gpu_h100-dev
+#SBATCH --array=1-10%10
 
 set -euo pipefail
 
@@ -48,7 +52,14 @@ CLIP=$(echo "$LINE" | awk '{print $3}')
 ENVS=$(echo "$LINE" | awk '{print $4}')
 EXP="${EXP/nc/con}"   # graphnc -> graphcon, so contact runs don't collide with contact-off logs
 
-echo "Run: hand=$HAND exp=$EXP clip=$CLIP num_envs=$ENVS  (retarget=graph, contact ON -con 3)"
+# Tag each submission uniquely so re-runs never overwrite an earlier run's logs/checkpoints.
+# SLURM_ARRAY_JOB_ID is shared across this array's tasks and unique per submission (and
+# increases over time, so it sorts chronologically); override with a custom STAMP via
+# STAMP=2026-06-11 sbatch --export=ALL,STAMP ... if you prefer a readable date.
+STAMP="${STAMP:-j${SLURM_ARRAY_JOB_ID:-$(date +%Y%m%d-%H%M%S)}}"
+EXP="${EXP}_${STAMP}"
+
+echo "Run: hand=$HAND exp=$EXP clip=$CLIP num_envs=$ENVS  (retarget=graph, contact ON -con 3, h100-dev)"
 nvidia-smi
 
 # Full paper hybrid recipe: --use_retarget_contact loads the _graph contact files
