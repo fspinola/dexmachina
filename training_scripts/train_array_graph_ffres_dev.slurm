@@ -15,7 +15,7 @@
 #SBATCH --time=02:00:00
 #SBATCH --job-name=dexmachina_graphffcon_dev
 #SBATCH --output=slurm_logs/slurm-graphffcon-dev-%A_%a.out
-#SBATCH --array=1-14%2
+#SBATCH --array=1-14%10
 
 set -euo pipefail
 
