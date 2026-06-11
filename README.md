@@ -152,6 +152,7 @@ mkdir -p slurm_logs
 sbatch --array=1 training_scripts/train_array_graph.slurm   # smoke-test task 1
 sbatch training_scripts/train_array_graph.slurm             # full sweep, contact OFF (exp graphnc)
 sbatch training_scripts/train_array_graph_contact.slurm     # full sweep, contact ON -con 3 (exp graphcon)
+sbatch --array=1 training_scripts/train_array_graph_ffres_dev.slurm  # dev (a100-dev, 2h): ff_residual + contact, B=4096 (DEV_ENVS overrides)
 ```
 
 Single clip directly:
