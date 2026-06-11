@@ -135,10 +135,11 @@ python -m learned_retargeter.kinematic.export_dexmachina_kinref \
   --dexmachina-root <path to this repo>
 ```
 
-`scripts/export_dexmachina_kinrefs.sh` batches the 5 DexMachina objects × {allegro, inspire}.
-Frames align 1:1 with `arctic/processed` (full-length, indexed from 0); the `--clip` range crops
-both at train time. References shipped here (`assets/retargeted/{allegro_hand,inspire_hand}/s01/`):
-`{box, ketchup, mixer, waffleiron, notebook}_use_01_vector_graph.pt`.
+`scripts/export_dexmachina_kinrefs.sh` batches the 6 paper source sequences × {allegro, inspire}
+(`s01:{box,ketchup:01,ketchup:02,mixer,waffleiron}`, `s02:notebook:02`). Frames align 1:1 with
+`arctic/processed` (full-length, indexed from 0); the `--clip` range crops both at train time.
+References shipped under `assets/retargeted/{allegro_hand,inspire_hand}/{s01,s02}/` as
+`*_vector_graph.pt`.
 
 ### Training on the graph references
 
@@ -149,7 +150,8 @@ experiments × 2 hands (14 tasks in `training_scripts/runs_graph.tsv`): `ketchup
 ```
 mkdir -p slurm_logs
 sbatch --array=1 training_scripts/train_array_graph.slurm   # smoke-test task 1
-sbatch training_scripts/train_array_graph.slurm             # full sweep
+sbatch training_scripts/train_array_graph.slurm             # full sweep, contact OFF (exp graphnc)
+sbatch training_scripts/train_array_graph_contact.slurm     # full sweep, contact ON -con 3 (exp graphcon)
 ```
 
 Single clip directly:
@@ -160,15 +162,45 @@ python dexmachina/rl/train_rl_games.py -B 12000 --hand allegro_hand \
   -imi 0.3 -bc 0.3 -imw 0.5 -con 0 ...   # contact OFF: no --use_retarget_contact, -con 0
 ```
 
-**Contact reward.** It is currently **off** (`-con 0`, no `--use_retarget_contact`). The shipped
-`contact_retarget/*` files were computed from the *original* retargeting, so they are stale for
-graph poses. To use the full hybrid+contact recipe, regenerate them from the graph references with
-`dexmachina/retargeting/map_contacts.py`, then re-add `--use_retarget_contact -con 3`.
+**Contact reward (now supported for graph refs).** The contact targets in `contact_retarget/*`
+are the ARCTIC human contact points grouped onto the *nearest robot collision-link AABB center*
+per frame — an assignment that depends on the retargeted hand poses, so the shipped para-based
+files are stale for graph poses (~25% of link assignments shift). They have been regenerated from
+the graph references with the same `map_contacts.py` pipeline (only the pose source differs):
+
+```
+python dexmachina/retargeting/map_contacts.py --hand allegro_hand \
+  --load_fname dexmachina/assets/arctic/processed/s01/box_use_01.npy \
+  --retarget_pt dexmachina/assets/retargeted/allegro_hand/s01/box_use_01_vector_graph.pt \
+  --save_suffix _graph
+```
+
+`--retarget_pt` poses the hands from the reference `.pt` (URDF mimic joints filled from the mimic
+tags); `--save_suffix` writes e.g. `box_use_01_graph.npy` next to the original. The loader prefers
+`{obj}_use_{clip}_{retarget_name}.npy` and falls back to the unsuffixed para file, so
+`--retarget_name para` behavior is unchanged. Shipped: `contact_retarget/{allegro,inspire}_hand/`
+`_graph.npy` for the 6 paper source sequences, full-length, same collision link names/order as the
+para baseline (the matched-contact reward asserts this against the env's collision links). Enable
+the full paper recipe with `--use_retarget_contact -con 3 --retarget_name graph`.
+
+### ff_residual action mode
+
+`-am ff_residual` is `residual` anchored on the **next** reference frame: the action base is
+`residual_qpos[k+1]` (matching the t+1 reward target, so zero action tracks the reference), the
+policy additionally observes the next-frame reference error `ref[k+1] - dof_pos`, and episodes
+reset to `ref[start]`. Scaling is residual's limit-based mapping (`a=±1` reaches the joint limits —
+in-range by construction, no extra knobs); `--res_cap` optionally bounds the wrist residual to
+`±hybrid_scales` (a one-sided sign bug in `res_cap` was fixed in this fork). In contrast,
+`residual` centers on `ref[k]` and `hybrid` uses absolute finger actions, so `ff_residual` is the
+ManipTrans-style feed-forward-residual parameterization. Note the extra observation block changes
+the obs dim: `ff_residual` checkpoints are not compatible with other modes.
 
 ### Notes / limitations
 
-- All four action modes (`kinematic`, `residual`, `hybrid`, `absolute`) load and consume the
-  graph references; validated by headless kinematic playback (correct bimanual grasp cycles).
+- All action modes (`kinematic`, `residual`, `hybrid`, `absolute`, `ff_residual`) load and consume
+  the graph references; validated by headless kinematic playback (correct bimanual grasp cycles).
+  The contact reward is orthogonal to the action mode (gated only by `-con > 0`), so it combines
+  with any of them, including `ff_residual`.
 - Allegro LH fingertip fidelity matches RH (~6–10 mm) via the `finger_convention_remap` plus the
   one-line thumb-origin mirror fix in `allegro_hand_left_6dof.urdf`.
 - Inspire references sit ~13–25 mm from the human. This is mostly **inherent retargeting quality**
