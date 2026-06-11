@@ -9,12 +9,13 @@
 #SBATCH -A ilc@h100
 #SBATCH -C h100
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=48
+# 1 of 4 GPUs -> request 1/4 of the 96-core node (24 cores -> ~1/4 RAM); do NOT use
+# --exclusive (it reserves the whole node incl. the other 3 GPUs -> long queue + waste).
+#SBATCH --cpus-per-task=24
 #SBATCH --time=10:00:00
 #SBATCH --job-name=dexmachina_graphcon
 #SBATCH --output=slurm_logs/slurm-graphcon-%A_%a.out
 #SBATCH --array=1-14%8
-#SBATCH --exclusive
 
 set -euo pipefail
 
