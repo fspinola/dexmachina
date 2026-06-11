@@ -30,7 +30,10 @@ export XDG_CACHE_HOME="$SLURM_TMPDIR/.cache"
 export TORCH_EXTENSIONS_DIR="$SLURM_TMPDIR/torch_extensions"
 export TRITON_CACHE_DIR="$SLURM_TMPDIR/triton"
 export CUDA_CACHE_PATH="$SLURM_TMPDIR/cuda_cache"
-export WANDB_DIR="$SLURM_TMPDIR/wandb"
+# W&B: offline runs must land on persistent $WORK (SLURM_TMPDIR is wiped at job end),
+# so they survive the job and a login-node loop can sync them (see wandb_sync_loop.sh).
+LOG_ROOT="$WORK/retargeting/dexmachina_logs"
+export WANDB_DIR="$LOG_ROOT/wandb"
 mkdir -p "$XDG_CACHE_HOME" "$TORCH_EXTENSIONS_DIR" "$TRITON_CACHE_DIR" "$CUDA_CACHE_PATH" "$WANDB_DIR"
 
 ROOT=/lustre/fswork/projects/rech/ilc/uds34ao/retargeting/dexmachina
