@@ -9,13 +9,12 @@
 set -u
 export PYTHONWARNINGS="${PYTHONWARNINGS:-ignore::UserWarning}"  # hush the pkg_resources deprecation spam
 LOG_ROOT="${1:-$WORK/retargeting/dexmachina_logs}"
-# wandb writes offline runs to $WANDB_DIR/wandb/offline-run-*; the slurms set
-# WANDB_DIR=$LOG_ROOT/wandb, so the runs live at $LOG_ROOT/wandb/wandb. Point sync at the
-# directory that actually contains the offline-run-* dirs (fall back to the outer one).
-SYNC_DIR="$LOG_ROOT/wandb/wandb"
-[[ -d "$SYNC_DIR" ]] || SYNC_DIR="$LOG_ROOT/wandb"
-echo "Syncing offline runs from $SYNC_DIR every 60 s (ctrl-c to stop)"
+# `wandb sync --sync-all` IGNORES any positional path and only scans $WANDB_DIR/wandb
+# (or ./wandb if WANDB_DIR is unset). So set WANDB_DIR to the same value the training
+# slurms use -- then sync finds exactly the runs they wrote (at $LOG_ROOT/wandb/wandb).
+export WANDB_DIR="$LOG_ROOT/wandb"
+echo "Syncing offline runs from $WANDB_DIR/wandb every 60 s (ctrl-c to stop)"
 while true; do
-  wandb sync --include-offline --sync-all "$SYNC_DIR"
+  wandb sync --include-offline --sync-all
   sleep 60
 done
