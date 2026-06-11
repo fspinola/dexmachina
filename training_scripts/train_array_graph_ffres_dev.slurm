@@ -53,10 +53,23 @@ EXP="${EXP/nc/ffcon}"   # graphnc -> graphffcon (ff_residual + contact)
 echo "Run: hand=$HAND exp=$EXP clip=$CLIP num_envs=$ENVS  (retarget=graph, -am ff_residual, contact ON -con 3, dev)"
 nvidia-smi
 
+# Opt-in resume: RESUME=1 continues the matching run from its latest checkpoint
+# (rl_games restores weights + optimizer + epoch and trains on toward --max_epochs),
+# so several 2h dev windows chain into one run. Default starts fresh.
+RESUME_ARG=""
+if [[ "${RESUME:-0}" == "1" ]]; then
+  CKPT=$(ls "logs/rl_games/${HAND}/${HAND%_hand}-${EXP}_${CLIP/-/}_"*/nn/"${HAND}.pth" 2>/dev/null | head -1)
+  if [[ -n "$CKPT" && -f "$CKPT" ]]; then
+    echo "Resuming from $CKPT"; RESUME_ARG="--checkpoint $CKPT"
+  else
+    echo "RESUME=1 but no checkpoint for ${HAND}/${EXP}/${CLIP}; starting fresh"
+  fi
+fi
+
 # Paper recipe with -am ff_residual instead of hybrid (action anchored on ref[k+1],
 # limit-based scaling, next-ref error in obs). --hybrid_scales is unused by ff_residual
 # unless --res_cap is added to bound the wrist residual to +/- those scales.
-uv run python dexmachina/rl/train_rl_games.py -B $ENVS -obf -obt --max_epochs 5000 \
+uv run python dexmachina/rl/train_rl_games.py -B $ENVS -obf -obt --max_epochs 5000 $RESUME_ARG \
   --actuate_object --retarget_name graph --horizon 16 -imw 0.5 --gain_mode all --curr_schedule uniform \
   --wait_epochs 100 --learning_rate 0.0003 --contact_beta 10 --upper_ratios 0.9 0.9 1 --lower_ratios 0.8 0.8 1 \
   --save_freq 500 --group_collisions --fixed_mode uniform --uniform_mode slow --action_penalty 0.01 \
