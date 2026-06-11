@@ -58,7 +58,9 @@ nvidia-smi
 # so several 2h dev windows chain into one run. Default starts fresh.
 RESUME_ARG=""
 if [[ "${RESUME:-0}" == "1" ]]; then
-  CKPT=$(ls "logs/rl_games/${HAND}/${HAND%_hand}-${EXP}_${CLIP/-/}_"*/nn/"${HAND}.pth" 2>/dev/null | head -1)
+  # newest checkpoint by mtime (-t): if num_envs changed, the exp name's B{envs} differs,
+  # so there may be several matching dirs -- resume from the most recently trained one.
+  CKPT=$(ls -t "logs/rl_games/${HAND}/${HAND%_hand}-${EXP}_${CLIP/-/}_"*/nn/"${HAND}.pth" 2>/dev/null | head -1)
   if [[ -n "$CKPT" && -f "$CKPT" ]]; then
     echo "Resuming from $CKPT"; RESUME_ARG="--checkpoint $CKPT"
   else
