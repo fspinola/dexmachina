@@ -78,12 +78,13 @@ def get_all_env_cfg(args, device, load_retarget_data=True):
         demo_data = get_demo_data(
             obj_name=args.arctic_object,
             hand_name=args.hand,
-            frame_start=start, 
+            frame_start=start,
             frame_end=end,
             use_clip=use_clip,
             subject_name=subject,
             load_retarget_contact=args.use_retarget_contact,
-        ) 
+            retarget_name=args.retarget_name,
+        )
     
     ep_len = int(int(end) - int(start))
     if args.interp > 1:

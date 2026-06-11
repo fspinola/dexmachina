@@ -299,6 +299,57 @@ def set_object_to_step(obj, obj_states, step):
     )
     return
 
+def mimic_joints_from_urdf(urdf_path):
+    """Parse <mimic> tags: {joint_name: (parent_joint, multiplier, offset)}."""
+    import xml.etree.ElementTree as ET
+    root = ET.parse(urdf_path).getroot()
+    mimic = dict()
+    for joint in root.findall("joint"):
+        m = joint.find("mimic")
+        if m is not None:
+            mimic[joint.get("name")] = (
+                m.get("joint"),
+                float(m.get("multiplier", 1.0)),
+                float(m.get("offset", 0.0)),
+            )
+    return mimic
+
+def retargeter_results_from_pt(pt_path, hand_entities, urdfs):
+    """Build {side: {'hand_qpos': (T, n_actuated)}} from a saved retargeted .pt.
+
+    The .pt stores retarget_data[side]['joint_qpos'] as a {joint_name: (T,)} dict over
+    independent joints only; mimic joints (e.g. Inspire) are filled from the URDF mimic
+    tags so the posed hand matches what the RL env renders. Columns follow the Genesis
+    entity's actuated-joint order, matching set_entities_to_step.
+    """
+    data = torch.load(pt_path, weights_only=False)
+    results = dict()
+    for side, hand in hand_entities.items():
+        joint_qpos = data["retarget_data"][side]["joint_qpos"]
+        qpos_np = {
+            k: np.asarray(v.detach().cpu() if torch.is_tensor(v) else v, dtype=np.float32).reshape(-1)
+            for k, v in joint_qpos.items()
+        }
+        mimic = mimic_joints_from_urdf(urdfs[side])
+        num_frames = len(next(iter(qpos_np.values())))
+        actuated_names = [
+            joint.name for joint in hand.joints
+            if joint.type in [gs.JOINT_TYPE.REVOLUTE, gs.JOINT_TYPE.PRISMATIC]
+        ]
+        cols = []
+        for name in actuated_names:
+            if name in qpos_np:
+                cols.append(qpos_np[name])
+            elif name in mimic and mimic[name][0] in qpos_np:
+                parent, mult, offset = mimic[name]
+                cols.append(qpos_np[parent] * mult + offset)
+            else:
+                print(f"WARNING: joint {name} ({side}) missing from {pt_path}, set to 0")
+                cols.append(np.zeros(num_frames, dtype=np.float32))
+        results[side] = {"hand_qpos": np.stack(cols, axis=1)}
+        print(f"Loaded {side} hand_qpos {results[side]['hand_qpos'].shape} from {pt_path}")
+    return results
+
 def visualize_markers(markers_dict, raw_contacts, grouped_contacts):
     # first set all markers to 0! avoid delays in vis
     for k, markers in markers_dict.items():
@@ -339,19 +390,25 @@ if __name__ == "__main__":
     parser.add_argument('--raytrace', action='store_true', help='Whether to use raytracer')
     parser.add_argument('--render_only', action='store_true', help='if true, skip saving data')
     parser.add_argument('--show_grouped_contact_only', action='store_true')
+    parser.add_argument('--retarget_pt', type=str, default='', help='Load hand poses from a retargeted .pt (e.g. *_vector_graph.pt) instead of assets/retargeter_results')
+    parser.add_argument('--save_suffix', type=str, default='', help='Suffix for the saved contact file, e.g. _graph -> box_use_01_graph.npy')
     args = parser.parse_args()
 
     assert os.path.exists(args.load_fname), f"load_fname={args.load_fname} does not exist"
     subject_name = args.load_fname.split("/")[-2]
     hand_name = args.hand if 'hand' in args.hand else f"{args.hand}_hand"
     retarget_type = 'position' if hand_name == 'shadow_hand' else 'vector'
-    retarget_fname = join(
-        f"assets/retargeter_results/{hand_name}/{subject_name}", 
-        args.load_fname.split("/")[-1].replace(".npy", f"_{retarget_type}.npy")
-    )
-    assert os.path.exists(retarget_fname), f"retarget_fname={retarget_fname} does not exist"
+    if args.retarget_pt:
+        assert os.path.exists(args.retarget_pt), f"retarget_pt={args.retarget_pt} does not exist"
+        retargeter_results = None # built from the .pt after the scene exists (needs entity joint order)
+    else:
+        retarget_fname = join(
+            f"assets/retargeter_results/{hand_name}/{subject_name}",
+            args.load_fname.split("/")[-1].replace(".npy", f"_{retarget_type}.npy")
+        )
+        assert os.path.exists(retarget_fname), f"retarget_fname={retarget_fname} does not exist"
 
-    retargeter_results = np.load(retarget_fname, allow_pickle=True).item()
+        retargeter_results = np.load(retarget_fname, allow_pickle=True).item()
     object_name = args.load_fname.split("/")[-1].split("_")[0]
 
     full_save_dir = get_asset_path(args.save_dir)
@@ -360,8 +417,11 @@ if __name__ == "__main__":
     if args.record_video:
         frame_path = os.path.join(save_path, f"frames_{object_name}")
         os.makedirs(frame_path, exist_ok=True)
-    save_fname = os.path.join(save_path, args.load_fname.split("/")[-1])
-    loaded_data = np.load(args.load_fname, allow_pickle=True).item() 
+    save_basename = args.load_fname.split("/")[-1]
+    if args.save_suffix:
+        save_basename = save_basename.replace(".npy", f"{args.save_suffix}.npy")
+    save_fname = os.path.join(save_path, save_basename)
+    loaded_data = np.load(args.load_fname, allow_pickle=True).item()
 
     obj_states = {
         "root_pos": loaded_data['params']['obj_trans'],
@@ -401,7 +461,10 @@ if __name__ == "__main__":
     for side, hand in hand_entities.items():
         links = [link for link in hand.links if link.geoms]
         collision_links[side] = links
-    
+
+    if args.retarget_pt:
+        retargeter_results = retargeter_results_from_pt(args.retarget_pt, hand_entities, urdfs)
+
     num_steps = retargeter_results['left']["hand_qpos"].shape[0]
     step = 0
     frames = []

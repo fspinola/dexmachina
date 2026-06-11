@@ -10,13 +10,14 @@ RETARGET_DIR = get_asset_path("retargeted")
 RETARGET_CONTACT_DIR= get_asset_path("contact_retarget")
 
 def get_demo_data(
-    obj_name="box", 
-    frame_start=10, 
-    frame_end=30, 
-    hand_name='inspire_hand', 
-    subject_name="s01", 
+    obj_name="box",
+    frame_start=10,
+    frame_end=30,
+    hand_name='inspire_hand',
+    subject_name="s01",
     use_clip="01",
-    load_retarget_contact=False, 
+    load_retarget_contact=False,
+    retarget_name="genesis",
 ):
     """ This is only processed Arctic data, not the raw data. Not including dexterous hand retargeting data. """
     demo_fname = f"{ARCTIC_PROCESSED_DIR}/{subject_name}/{obj_name}_use_{use_clip}.npy"
@@ -35,7 +36,7 @@ def get_demo_data(
     if load_retarget_contact:
         retar_contact = load_contact_retarget_data(
             obj_name=obj_name, hand_name=hand_name, frame_start=frame_start, frame_end=frame_end,
-            use_clip=use_clip, subject_name=subject_name,
+            use_clip=use_clip, subject_name=subject_name, save_name=retarget_name,
         )
         print(f"Replacing demo_data with retarget contact data")
         demo_data.update(retar_contact) 
@@ -139,9 +140,13 @@ def load_contact_retarget_data(
     use_clip="01",
     subject_name="s01",
 ):
-    # e.g. assets/contact_retarget/ability_hand/s01/box_use_01.npy
-    fname = f"{RETARGET_CONTACT_DIR}/{hand_name}/{subject_name}/{obj_name}_use_{use_clip}.npy"
+    # Prefer a retarget-specific file (e.g. box_use_01_graph.npy, from map_contacts.py
+    # --save_suffix _{save_name}); fall back to the unsuffixed original (para baseline).
+    fname = f"{RETARGET_CONTACT_DIR}/{hand_name}/{subject_name}/{obj_name}_use_{use_clip}_{save_name}.npy"
+    if not os.path.exists(fname):
+        fname = f"{RETARGET_CONTACT_DIR}/{hand_name}/{subject_name}/{obj_name}_use_{use_clip}.npy"
     assert os.path.exists(fname), f"File {fname} not found"
+    print(f"Loading retarget contact data from {fname}")
     loaded = np.load(fname, allow_pickle=True).item()
     retar_contact = dict()
     for side in ['left', 'right']:
