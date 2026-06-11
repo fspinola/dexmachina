@@ -9,12 +9,15 @@
 set -u
 export PYTHONWARNINGS="${PYTHONWARNINGS:-ignore::UserWarning}"  # hush the pkg_resources deprecation spam
 LOG_ROOT="${1:-$WORK/retargeting/dexmachina_logs}"
-# `wandb sync --sync-all` IGNORES any positional path and only scans $WANDB_DIR/wandb
-# (or ./wandb if WANDB_DIR is unset). So set WANDB_DIR to the same value the training
-# slurms use -- then sync finds exactly the runs they wrote (at $LOG_ROOT/wandb/wandb).
-export WANDB_DIR="$LOG_ROOT/wandb"
-echo "Syncing offline runs from $WANDB_DIR/wandb every 60 s (ctrl-c to stop)"
+RUNS_DIR="$LOG_ROOT/wandb/wandb"          # wandb nests runs under WANDB_DIR/wandb (slurms set WANDB_DIR=$LOG_ROOT/wandb)
+REPO="$(cd "$(dirname "$0")/.." && pwd)"  # this script lives in <repo>/training_scripts
+# `wandb sync --sync-all` only scans ./wandb (it ignores both a path arg AND WANDB_DIR),
+# so it never finds these runs. Instead pass each offline-run dir explicitly; run the wandb
+# CLI via uv from the repo so its venv resolves regardless of the run dirs' location.
+echo "Syncing offline runs in $RUNS_DIR every 60 s (ctrl-c to stop)"
+shopt -s nullglob
 while true; do
-  wandb sync --include-offline --sync-all
+  runs=("$RUNS_DIR"/offline-run-* "$RUNS_DIR"/run-*)
+  [[ ${#runs[@]} -gt 0 ]] && ( cd "$REPO" && uv run wandb sync "${runs[@]}" )
   sleep 60
 done
