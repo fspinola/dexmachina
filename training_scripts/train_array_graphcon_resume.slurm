@@ -1,27 +1,31 @@
 #!/bin/bash
-# RESUME the graph + contact (graphcon) runs from their latest checkpoint.
-# rl_games restores model+optimizer+epoch from nn/<hand>.pth and continues toward
-# --max_epochs (5000). Per array task it auto-discovers the newest checkpoint for that
-# (hand, clip) across any exp tag (the original graphcon_j<JOBID> dirs or a prior resume)
-# by mtime, and writes to a STABLE -exp ("graphcon", no job id) so repeated resubmissions
-# self-resume from their own newest checkpoint. Resuming with a different -B is fine
-# (the policy depends on obs/action dims, not env count).
+# RESUME the graph + contact (graphcon) runs from their latest checkpoint, on the
+# a100 DEV QOS (2h slots). rl_games restores model+optimizer+epoch from nn/<hand>.pth
+# and continues toward --max_epochs (5000); 2h won't finish, so just resubmit -- each
+# task auto-discovers the newest checkpoint for that (hand, clip) across any exp tag
+# (the original graphcon_j<JOBID> dirs or a prior resume) by mtime and writes to a STABLE
+# -exp ("graphcon", no job id), so resubmissions self-resume. Recipe MUST match the
+# checkpoint (hybrid + contact) -- the ff_residual dev script can't load these (its extra
+# observation block changes the obs dim).
 #
-# Resources fixed per the IDRIS note: 1 GPU + 24 CPUs (1/4 of the 96-core H100 node =
-# proportional share -> 1/4 node memory), NO --exclusive (was reserving all 4 GPUs and
-# the whole node, hence the long queue).
+# --array=1-10 == exactly the 10 checkpointed tasks (ketchup-30-130, box-30-230,
+# mixer-30-200, ketchup-40-340, mixer-40-340 x both hands; tsv rows 1-10). Rows 11-14
+# (notebook, waffleiron) have no checkpoint -- run those fresh elsewhere.
 #
 # Usage (from the repo root, after `mkdir -p slurm_logs`):
-#   sbatch training_scripts/train_array_graphcon_resume.slurm            # all 14 tasks
-#   RESUME_ENVS=8000 sbatch --export=ALL,RESUME_ENVS ...                 # smaller batch
-#SBATCH -A ilc@h100
-#SBATCH -C h100
+#   sbatch training_scripts/train_array_graphcon_resume.slurm                 # resume the 10
+#   RESUME_ENVS=8000 sbatch --export=ALL,RESUME_ENVS ...                      # smaller batch (e.g. OOM)
+# For the h100 10h queue instead, mirror the #SBATCH partition lines from
+# train_array_graph_contact.slurm (those are the known-good h100 directives).
+#SBATCH -A ilc@a100
+#SBATCH -C a100
+#SBATCH --qos=qos_gpu_a100-dev
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=24
-#SBATCH --time=10:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --time=02:00:00
 #SBATCH --job-name=dexmachina_graphcon_resume
 #SBATCH --output=slurm_logs/slurm-graphcon-resume-%A_%a.out
-#SBATCH --array=1-14%8
+#SBATCH --array=1-10%10
 
 set -euo pipefail
 
