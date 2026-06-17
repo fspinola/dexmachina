@@ -62,7 +62,9 @@ HAND=$(echo "$LINE" | awk '{print $1}')
 CLIP=$(echo "$LINE" | awk '{print $3}')
 ENVS="${RESUME_ENVS:-$(echo "$LINE" | awk '{print $4}')}"
 SAVE_FREQ="${SAVE_FREQ:-500}"
-EXP="graphcon"   # stable output name (no job id) -> future resubmissions self-resume
+EXP="${EXP_BASE:-graphcon}"   # stable output name (no job id) -> future resubmissions self-resume.
+                              # Set EXP_BASE=graphconfix to resume an ISOLATED track that never reads or
+                              # writes the old graphcon dirs (discovery glob below is keyed to $EXP).
 
 # Clip slug as it appears in the exp dir name: box-30-230-s01-u01 -> box30-230-s01-u01
 IFS='-' read -r OBJ START END SUBJ USEP <<< "$CLIP"
@@ -70,7 +72,7 @@ SLUG="${OBJ}${START}-${END}-${SUBJ}-${USEP}"
 
 # Newest checkpoint for this (hand, clip), across any exp tag AND any checkpoint name
 # (best nn/<hand>.pth or periodic last_<hand>_ep_N_*.pth), by mtime -> furthest epoch.
-CKPT=$(ls -dt logs/rl_games/${HAND}/${HAND%_hand}-graphcon*_${SLUG}_B*/nn/*.pth 2>/dev/null | head -1 || true)
+CKPT=$(ls -dt logs/rl_games/${HAND}/${HAND%_hand}-${EXP}*_${SLUG}_B*/nn/*.pth 2>/dev/null | head -1 || true)
 RESUME_ARG=""
 if [[ -n "${CKPT}" ]]; then
   echo "Resuming hand=$HAND clip=$CLIP from: $CKPT (envs=$ENVS)"

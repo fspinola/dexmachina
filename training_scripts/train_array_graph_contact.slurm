@@ -51,6 +51,8 @@ EXP=$(echo "$LINE"  | awk '{print $2}')
 CLIP=$(echo "$LINE" | awk '{print $3}')
 ENVS=$(echo "$LINE" | awk '{print $4}')
 EXP="${EXP/nc/con}"   # graphnc -> graphcon, so contact runs don't collide with contact-off logs
+EXP="${EXP_BASE:-$EXP}"   # optional isolated track: e.g. EXP_BASE=graphconfix keeps re-runs (such as
+                          # after the forearm joint-limit fix) in their own dirs, never overwriting old graphcon logs
 
 # Tag each submission uniquely so re-runs never overwrite an earlier run's logs/checkpoints.
 # SLURM_ARRAY_JOB_ID is shared across this array's tasks and unique per submission (and
