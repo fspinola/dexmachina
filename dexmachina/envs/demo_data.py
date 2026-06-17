@@ -46,7 +46,7 @@ def get_joint_init_limits(joint_pos_dict):
     limits = dict()
     default_qpos = dict()
     default_margin = 0.15
-    for k, v in joint_pos_dict.items():        
+    for k, v in joint_pos_dict.items():
         margin = default_margin
         if 'tx' in k or 'ty' in k or 'tz' in k:
             margin = 0.2 # 20 cm
@@ -54,8 +54,59 @@ def get_joint_init_limits(joint_pos_dict):
             # print(f"Using 30 degrees margin for {k}")
             margin = 0.5 # 30 degrees
         limits[k] = (min(v) - margin, max(v) + margin)
-        default_qpos[k] = v[0] 
+        default_qpos[k] = v[0]
     return limits, default_qpos
+
+
+# +-6.2 rad is the limit on the synthetic 6-DOF "forearm" roll/pitch/yaw joints in every
+# allegro/inspire *_6dof.urdf (just under a full +-2*pi turn). Translations are +-5 m.
+FOREARM_ROT_LIMIT = 6.2
+
+def wrap_forearm_qpos_into_limits(qpos_dict, rot_limit=FOREARM_ROT_LIMIT):
+    """Seat each forearm roll/pitch/yaw reference inside [-rot_limit, rot_limit].
+
+    Retargeted wrist DOFs are continuous (unwrapped) Euler angles that can drift past
+    +-2*pi, i.e. outside the joint's physical range; the sim then silently clamps them and
+    the grasp breaks (object never articulates -> bad ADD/AUC). We shift each (already
+    frame-sliced) trajectory by a whole number of 2*pi turns chosen to put it in range.
+    A 2*pi shift on a single revolute joint is an exact identity rotation, so the wrist
+    orientation, the trajectory continuity, and the FK-derived kpt_pos / wrist_pose / contact
+    targets are all preserved -- only the PD-reference branch changes, becoming reachable.
+
+    Because this runs on the post-slice trajectory it fits exactly the frames being trained.
+    A residual overflow (continuous span > 2*rot_limit, e.g. a >2-turn wrist spin) is clamped
+    and warned about. Non-forearm-rotation joints are returned untouched, and an already
+    in-range joint is left exactly as-is (no-op for the in-range `para` references).
+    """
+    two_pi = 2.0 * np.pi
+    lo, hi = -rot_limit, rot_limit
+    out = dict(qpos_dict)
+    for jname, q in qpos_dict.items():
+        if not any(tag in jname for tag in ("forearm_roll", "forearm_pitch", "forearm_yaw")):
+            continue
+        is_t = torch.is_tensor(q)
+        arr = q.detach().cpu().numpy() if is_t else np.asarray(q)
+        cont = np.unwrap(arr.astype(np.float64))
+        lo_c, hi_c = float(cont.min()), float(cont.max())
+        if (hi_c - lo_c) <= (hi - lo):
+            # smallest 2*pi shift that fits the whole trajectory in range (prefer no shift)
+            t_lo = np.ceil((lo - lo_c) / two_pi)
+            t_hi = np.floor((hi - hi_c) / two_pi)
+            turns = float(np.clip(0.0, t_lo, t_hi)) if t_lo <= t_hi \
+                else round((-(lo_c + hi_c) / 2.0) / two_pi)
+        else:
+            turns = round((-(lo_c + hi_c) / 2.0) / two_pi)  # span too big: centre, then clip
+        shifted = cont + two_pi * turns
+        n_oor = int(np.count_nonzero((shifted < lo) | (shifted > hi)))
+        if turns == 0 and n_oor == 0:
+            continue  # already in range -> leave the original object untouched
+        fixed = np.clip(shifted, lo, hi) if n_oor else shifted
+        if n_oor:
+            print(f"WARNING: {jname}: {n_oor} frame(s) still outside +-{rot_limit} after a "
+                  f"2*pi wrap (continuous span exceeds the joint range); clamped. Inspect "
+                  f"this clip's wrist retargeting.")
+        out[jname] = torch.as_tensor(fixed, dtype=q.dtype) if is_t else fixed.astype(arr.dtype)
+    return out
  
 def load_genesis_retarget_data(
     obj_name="box",
@@ -99,13 +150,18 @@ def load_genesis_retarget_data(
         loaded = retarget_loaded[side]
         residual_qpos = loaded["joint_qpos"]
         sliced_qpos = {k: v[frame_start:frame_end] for k, v in residual_qpos.items()}
-        
-        qpos_targets = None 
+        # Make the forearm wrist reference physically reachable BEFORE limits/init are
+        # derived from it, so the residual base, the data-derived joint limits and init_qpos
+        # are all in-range and mutually consistent (see wrap_forearm_qpos_into_limits).
+        sliced_qpos = wrap_forearm_qpos_into_limits(sliced_qpos)
+
+        qpos_targets = None
         if 'joint_targets' in loaded:
             print("Using joint_targets")
             qpos_targets = loaded["joint_targets"]
             qpos_targets = {k: v[frame_start:frame_end] for k, v in qpos_targets.items()}
-        limits, init_pos = get_joint_init_limits(sliced_qpos) # this is a dict 
+            qpos_targets = wrap_forearm_qpos_into_limits(qpos_targets)
+        limits, init_pos = get_joint_init_limits(sliced_qpos) # this is a dict
         kpt_pos = loaded["kpt_pos"]
         if len(kpt_pos.shape) > 3:
             print("Omitting the first dimension of kpt_pos")
