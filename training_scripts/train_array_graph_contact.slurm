@@ -56,8 +56,9 @@ EXP="${EXP_BASE:-$EXP}"   # optional isolated track: e.g. EXP_BASE=graphconfix k
 RETARGET="${RETARGET:-graph}"   # which kinrefs to train on. RETARGET=para reproduces dexmachina's
                                 # baseline through THIS exact pipeline (only the retargeting data changes),
                                 # so para-vs-graph isolates the data as the sole variable. Pair with EXP_BASE.
-GRIP_SCALE="${GRIP_SCALE:-1.0}" # >1 stiffens the FINGER actuators (grip force) so a faithful fingertip
-                                # grasp can hold the object through the lift. 1.0 = unchanged. e.g. GRIP_SCALE=4
+GRIP_SCALE="${GRIP_SCALE:-1.0}" # >1 scales the FINGER control gains kp/kv only (force_range / motor limit
+                                # unchanged, same as para) so a fingertip grasp holds better through the lift.
+                                # 1.0 = unchanged. e.g. GRIP_SCALE=4
 
 # Tag each submission uniquely so re-runs never overwrite an earlier run's logs/checkpoints.
 # SLURM_ARRAY_JOB_ID is shared across this array's tasks and unique per submission (and
