@@ -56,6 +56,8 @@ EXP="${EXP_BASE:-$EXP}"   # optional isolated track: e.g. EXP_BASE=graphconfix k
 RETARGET="${RETARGET:-graph}"   # which kinrefs to train on. RETARGET=para reproduces dexmachina's
                                 # baseline through THIS exact pipeline (only the retargeting data changes),
                                 # so para-vs-graph isolates the data as the sole variable. Pair with EXP_BASE.
+GRIP_SCALE="${GRIP_SCALE:-1.0}" # >1 stiffens the FINGER actuators (grip force) so a faithful fingertip
+                                # grasp can hold the object through the lift. 1.0 = unchanged. e.g. GRIP_SCALE=4
 
 # Tag each submission uniquely so re-runs never overwrite an earlier run's logs/checkpoints.
 # SLURM_ARRAY_JOB_ID is shared across this array's tasks and unique per submission (and
@@ -64,7 +66,7 @@ RETARGET="${RETARGET:-graph}"   # which kinrefs to train on. RETARGET=para repro
 STAMP="${STAMP:-j${SLURM_ARRAY_JOB_ID:-$(date +%Y%m%d-%H%M%S)}}"
 EXP="${EXP}_${STAMP}"
 
-echo "Run: hand=$HAND exp=$EXP clip=$CLIP num_envs=$ENVS  (retarget=$RETARGET, contact ON -con 3, h100-dev)"
+echo "Run: hand=$HAND exp=$EXP clip=$CLIP num_envs=$ENVS  (retarget=$RETARGET, contact ON -con 3, grip_scale=$GRIP_SCALE, h100-dev)"
 nvidia-smi
 
 # Full paper hybrid recipe: --use_retarget_contact loads the matching contact files
@@ -75,4 +77,4 @@ uv run python dexmachina/rl/train_rl_games.py -B $ENVS -obf -obt --max_epochs 50
   --save_freq 1000 --group_collisions --fixed_mode uniform --uniform_mode slow --action_penalty 0.01 \
   --dialback_ep_len 80 --skip_grad --deque_len 30 --task_rew_betas 10 1 5 --use_retarget_contact \
   --aux_reset_thres 0 0 0 --curr_rew_thres 0.6 0.01 0.01 0.01 -am hybrid --hybrid_scales 0.1 1.0 \
-  --kp_init 80 --kv_init 5 --clip "$CLIP" -imi 0.3 -bc 0.3 -con 3 -ert 0.6 -exp "$EXP" --hand "$HAND"
+  --kp_init 80 --kv_init 5 --grip_scale "$GRIP_SCALE" --clip "$CLIP" -imi 0.3 -bc 0.3 -con 3 -ert 0.6 -exp "$EXP" --hand "$HAND"

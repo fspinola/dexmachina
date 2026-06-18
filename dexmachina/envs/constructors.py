@@ -133,6 +133,22 @@ def get_all_env_cfg(args, device, load_retarget_data=True):
         robot_cfgs[side]['show_keypoints'] = args.show_kpts
         if args.hide_hand:
             robot_cfgs[side]['visualization'] = False
+        # Grip-force lever: stiffen the FINGER actuators so a fingertip grasp can hold the
+        # object (kp/kv/force_range of the 'finger' group only; wrist gains untouched). Make a
+        # fresh per-side copy first (left/right share the actuator dict via a shallow .copy()).
+        if getattr(args, 'grip_scale', 1.0) != 1.0 and isinstance(robot_cfgs[side].get('actuators'), dict):
+            acts = dict(robot_cfgs[side]['actuators'])
+            fing = acts.get('finger')
+            if isinstance(fing, dict):
+                fing = dict(fing)
+                for k in ('kp', 'kv', 'force_range'):
+                    if k in fing:
+                        fing[k] = float(fing[k]) * args.grip_scale
+                acts['finger'] = fing
+                robot_cfgs[side]['actuators'] = acts
+                if side == 'left':
+                    print(f"[grip] finger actuators scaled x{args.grip_scale} -> "
+                          f"kp={fing.get('kp')}, kv={fing.get('kv')}, force_range={fing.get('force_range')}")
 
     obj_name = args.arctic_object
     object_cfgs = {
@@ -242,7 +258,11 @@ def get_common_argparser():
     parser.add_argument('--vis', '-v', action='store_true')
     parser.add_argument('--overlay', '-ov', action='store_true')
     parser.add_argument('--n_envs_per_row', '-nrow', type=int, default=None)
-    parser.add_argument('--texture_object', '-to', action='store_true', help='Show texture for the object and hide the actual URDF') 
+    parser.add_argument('--texture_object', '-to', action='store_true', help='Show texture for the object and hide the actual URDF')
+    parser.add_argument('--grip_scale', type=float, default=1.0,
+                        help='Scale the FINGER actuator gains (kp, kv, force_range) by this factor. '
+                             '>1 lets the fingers grip/press harder so a faithful fingertip grasp can hold '
+                             'the object through the lift instead of slipping. 1.0 = unchanged (default).')
 
     parser.add_argument('--arctic_object', '-ao', type=str, default='box')
     parser.add_argument('--hand', type=str, default='inspire_hand')
