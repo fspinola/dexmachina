@@ -53,6 +53,9 @@ ENVS=$(echo "$LINE" | awk '{print $4}')
 EXP="${EXP/nc/con}"   # graphnc -> graphcon, so contact runs don't collide with contact-off logs
 EXP="${EXP_BASE:-$EXP}"   # optional isolated track: e.g. EXP_BASE=graphconfix keeps re-runs (such as
                           # after the forearm joint-limit fix) in their own dirs, never overwriting old graphcon logs
+RETARGET="${RETARGET:-graph}"   # which kinrefs to train on. RETARGET=para reproduces dexmachina's
+                                # baseline through THIS exact pipeline (only the retargeting data changes),
+                                # so para-vs-graph isolates the data as the sole variable. Pair with EXP_BASE.
 
 # Tag each submission uniquely so re-runs never overwrite an earlier run's logs/checkpoints.
 # SLURM_ARRAY_JOB_ID is shared across this array's tasks and unique per submission (and
@@ -61,13 +64,13 @@ EXP="${EXP_BASE:-$EXP}"   # optional isolated track: e.g. EXP_BASE=graphconfix k
 STAMP="${STAMP:-j${SLURM_ARRAY_JOB_ID:-$(date +%Y%m%d-%H%M%S)}}"
 EXP="${EXP}_${STAMP}"
 
-echo "Run: hand=$HAND exp=$EXP clip=$CLIP num_envs=$ENVS  (retarget=graph, contact ON -con 3, h100-dev)"
+echo "Run: hand=$HAND exp=$EXP clip=$CLIP num_envs=$ENVS  (retarget=$RETARGET, contact ON -con 3, h100-dev)"
 nvidia-smi
 
-# Full paper hybrid recipe: --use_retarget_contact loads the _graph contact files
+# Full paper hybrid recipe: --use_retarget_contact loads the matching contact files
 # (per-link matched contact reward), -con 3 weights it.
 uv run python dexmachina/rl/train_rl_games.py -B $ENVS -obf -obt --max_epochs 5000 \
-  --actuate_object --retarget_name graph --horizon 16 -imw 0.5 --gain_mode all --curr_schedule uniform \
+  --actuate_object --retarget_name "$RETARGET" --horizon 16 -imw 0.5 --gain_mode all --curr_schedule uniform \
   --wait_epochs 100 --learning_rate 0.0003 --contact_beta 10 --upper_ratios 0.9 0.9 1 --lower_ratios 0.8 0.8 1 \
   --save_freq 1000 --group_collisions --fixed_mode uniform --uniform_mode slow --action_penalty 0.01 \
   --dialback_ep_len 80 --skip_grad --deque_len 30 --task_rew_betas 10 1 5 --use_retarget_contact \
