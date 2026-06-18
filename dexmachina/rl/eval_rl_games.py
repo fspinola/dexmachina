@@ -4,6 +4,7 @@ import genesis as gs
 import numpy as np
 import torch  
 import argparse
+import sys
 import math
 import inspect
 import os
@@ -130,14 +131,20 @@ def main():
     parser.add_argument('--video_fname', '-of', type=str, default="-eval.mp4") # if not provided, save in the same folder as the checkpoint
     
     args = parser.parse_args()
+    # Only override the saved action_mode when the user EXPLICITLY passes -am/--action_mode.
+    # (The shared parser defaults action_mode to 'residual', which must not clobber the value
+    #  baked into the run's env.pkl.) Use e.g. `-am kinematic` for an open-loop reference replay.
+    override_action_mode = any(a in ('-am', '--action_mode') for a in sys.argv)
 
     ckpt_path = "/".join(args.checkpoint.split("/")[:-2])
     saved_cfg_fname = os.path.join(ckpt_path, "params", "env.pkl")
-    
+
     ckpt_name = f"{args.checkpoint.split('/')[-1]}" # inpsire_ep1000 etc
     run_name = f"{args.checkpoint.split('/')[-3]}" # inpsire_ep1000 etc
     ckpt_data_folder = os.path.join(ckpt_path, ckpt_name.replace(".pth", "_eval"))
-    os.makedirs(ckpt_data_folder, exist_ok=True) 
+    if override_action_mode:
+        ckpt_data_folder += f"_{args.action_mode}"  # e.g. *_eval_kinematic; keep policy eval intact
+    os.makedirs(ckpt_data_folder, exist_ok=True)
 
     video_fname = join(ckpt_data_folder, f"video.mp4")
     if args.output_render:
@@ -150,7 +157,14 @@ def main():
     # load to pkl
     with open(saved_cfg_fname, "rb") as f:
         env_kwargs = pickle.load(f)
-    
+
+    if override_action_mode:
+        for side, cfg in env_kwargs['robot_cfgs'].items():
+            if isinstance(cfg, dict) and 'action_mode' in cfg:
+                cfg['action_mode'] = args.action_mode
+        print(f"[eval] action_mode -> '{args.action_mode}' for robots {list(env_kwargs['robot_cfgs'])}"
+              f"  (kinematic = open-loop reference replay, policy ignored); results -> {ckpt_data_folder}")
+
     assert env_kwargs['env_cfg']['use_rl_games'], "The saved environment is not from rl-games"
     
     if args.raytrace and args.record_video:
