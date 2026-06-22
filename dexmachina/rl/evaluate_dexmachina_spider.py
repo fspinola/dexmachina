@@ -119,6 +119,44 @@ def _rotation_distance(q1: np.ndarray, q2: np.ndarray) -> np.ndarray:
     )
 
 
+# ---------------------------------------------------------------------------
+# SPIDER success-rate helpers -- ported byte-for-byte from SPIDER's
+# spider/postprocess/get_success_rate.py (quat_to_vel / mul_quat / quat_sub).
+# Used ONLY for the --success mode so SR matches SPIDER's definition exactly.
+# ---------------------------------------------------------------------------
+
+def _quat_to_vel(quat: np.ndarray) -> np.ndarray:
+    """(w,x,y,z) quaternion -> axis-angle 3-vector (radians), wrapped to (-pi, pi]."""
+    axis = quat[..., 1:4]
+    sin_a_2 = np.linalg.norm(axis, axis=-1)             # = |sin(theta/2)|
+    speed = 2.0 * np.arctan2(sin_a_2, quat[..., 0])     # = theta in (-pi, 2pi)
+    speed = np.where(speed > np.pi, speed - 2.0 * np.pi, speed)
+    safe = np.where(sin_a_2 == 0.0, 1.0, sin_a_2)
+    out = axis * (speed / safe)[..., None]
+    return np.where((sin_a_2 == 0.0)[..., None], 0.0, out)
+
+
+def _quat_sub(qa: np.ndarray, qb: np.ndarray) -> np.ndarray:
+    """Angular difference qa 'minus' qb as an axis-angle 3-vector (SPIDER convention)."""
+    qneg = qb.copy()
+    qneg[..., 1:] = -qneg[..., 1:]
+    return _quat_to_vel(_quat_mul(qneg, qa))
+
+
+def _spider_sr_errors(obj_s: np.ndarray, demo_s: np.ndarray) -> tuple[float, float]:
+    """SPIDER SR per-trajectory errors from aligned (obj, demo) slices.
+
+    Position is mean-centered per trajectory (both rollout and reference) BEFORE the
+    L2 error -- this matches get_success_rate.py and measures relative motion. Rotation
+    uses the axis-angle (quat_sub) norm. Both are then averaged over frames.
+    """
+    pt = obj_s[:, :3] - obj_s[:, :3].mean(axis=0, keepdims=True)
+    pr = demo_s[:, :3] - demo_s[:, :3].mean(axis=0, keepdims=True)
+    pos_err = float(np.linalg.norm(pt - pr, axis=1).mean())
+    quat_err = float(np.linalg.norm(_quat_sub(obj_s[:, 3:7], demo_s[:, 3:7]), axis=1).mean())
+    return pos_err, quat_err
+
+
 # Unified metric keys / labels (match SPIDER's naming).
 METRIC_KEYS = ["pos_dist", "rot_dist", "arti_dist"]
 METRIC_LABELS = {
@@ -199,6 +237,9 @@ def evaluate_eval_npy(npy_path: str, env_idx: int = 0, align: str = "shift") -> 
     for key, vals in [("pos_dist", pos_dist), ("rot_dist", rot_dist), ("arti_dist", arti_dist)]:
         out[f"{key}_mean"] = float(np.nanmean(vals))
         out[f"{key}_std"] = float(np.nanstd(vals))
+
+    # SPIDER success-rate per-trajectory errors (mean-centered pos L2, axis-angle rot).
+    out["sr_pos_err"], out["sr_quat_err"] = _spider_sr_errors(obj_s, demo_s)
 
     # Sanity payload: the per-frame values DexMachina saved in rew_dict, for env_idx,
     # aligned to the same frame count (saved arti is (d^2)/2 -> convert to L1 |d|).
@@ -383,6 +424,39 @@ def print_per_run_table(rows: list[dict], align: str = "shift") -> None:
 
 
 # ---------------------------------------------------------------------------
+# SPIDER success-rate table
+# ---------------------------------------------------------------------------
+
+def print_success_table(rows: list[dict], pos_thr: float, quat_thr: float, align: str) -> None:
+    print(f"\n{'='*108}")
+    print(f"SPIDER success rate  (success = pos_err <= {pos_thr} m  AND  quat_err <= {quat_thr} rad)")
+    print(f"  pos_err = mean-centered L2 (m); quat_err = axis-angle (rad); align={align}; "
+          f"articulation NOT used")
+    print(f"{'='*108}")
+    header = (f"  {'method':<14} {'clip':<22} {'ckpt':<10} "
+              f"{'pos_err (m)':>14} {'quat_err (rad)':>16} {'success':>9}")
+    print(header)
+    print("  " + "-" * (len(header) - 2))
+    per_method: dict[str, list[int]] = defaultdict(list)
+    for r in rows:
+        m = r["metrics"]
+        ok = (m["sr_pos_err"] <= pos_thr) and (m["sr_quat_err"] <= quat_thr)
+        per_method[str(r["method"])].append(int(ok))
+        ckpt = f"ep{r['ep']}" if r["ep"] is not None else "final"
+        print(f"  {str(r['method']):<14} {str(r['clip']):<22} {ckpt:<10} "
+              f"{m['sr_pos_err']:>14.4f} {m['sr_quat_err']:>16.4f} {'PASS' if ok else 'FAIL':>9}")
+    print("  " + "-" * (len(header) - 2))
+    print("  Success rate:")
+    all_ok: list[int] = []
+    for method in sorted(per_method):
+        v = per_method[method]; all_ok += v
+        print(f"    {method:<16} {sum(v)}/{len(v)} = {np.mean(v):.4f} ({100*np.mean(v):.1f}%)")
+    if len(per_method) > 1:
+        print(f"    {'OVERALL':<16} {sum(all_ok)}/{len(all_ok)} = "
+              f"{np.mean(all_ok):.4f} ({100*np.mean(all_ok):.1f}%)")
+
+
+# ---------------------------------------------------------------------------
 # Grouped summary tables: rows = task (clip), cols = method
 # ---------------------------------------------------------------------------
 
@@ -511,6 +585,13 @@ def main() -> int:
                          "reward, default); raw=SPIDER evaluate_rl_eval literal; clamp=+1 keep-all.")
     ap.add_argument("--summary", action="store_true",
                     help="Print grouped tables (rows=task, cols=method) instead of per-run.")
+    ap.add_argument("--success", action="store_true",
+                    help="Compute SPIDER success rate (per-traj: pos_err<=thr AND quat_err<=thr, "
+                         "then fraction successful per method/overall).")
+    ap.add_argument("--pos_err_threshold", type=float, default=0.1,
+                    help="SR position-error threshold in m (SPIDER default 0.1).")
+    ap.add_argument("--quat_err_threshold", type=float, default=0.5,
+                    help="SR orientation-error threshold in rad (SPIDER default 0.5).")
     ap.add_argument("--latex", action="store_true", help="Also print LaTeX tables in --summary mode.")
     ap.add_argument("--sanity", action="store_true",
                     help="Print recomputed vs saved pos/rot means to verify the port.")
@@ -587,7 +668,9 @@ def main() -> int:
         return 0
 
     # ---- Output -------------------------------------------------------------
-    if args.summary:
+    if args.success:
+        print_success_table(rows, args.pos_err_threshold, args.quat_err_threshold, args.align)
+    elif args.summary:
         results, methods, tasks = build_grouped(rows)
         print(f"\n{'='*70}")
         print("SPIDER-protocol summary  (rows = object clip, cols = method)")
