@@ -251,17 +251,20 @@ class BaseEnv:
         # use retarget data to set base_init_pos, base_init_quat in obj_cfg
         self.objects = dict()
         for k, cfg in object_cfgs.items():
-            # cfg['base_init_pos'] =  demo_data['obj_pos'][0]
-            # cfg['base_init_quat'] = demo_data['obj_quat'][0]
+            # OakInk multi-object: each object gets its own {obj_pos,obj_quat,obj_arti} from
+            # demo_data["objects"][<name>]; ARCTIC passes the flat demo_data as before.
+            obj_demo = demo_data
+            if isinstance(demo_data, dict) and "objects" in demo_data:
+                obj_demo = demo_data["objects"][k]
             self.objects[k] = ArticulatedObject(
-                cfg, 
+                cfg,
                 device=device,
                 scene=self.scene,
                 num_envs=self.num_envs,
-                demo_data=demo_data,
-                visualize_contact=visualize_contact, 
+                demo_data=obj_demo,
+                visualize_contact=visualize_contact,
                 disable_collision=cfg.get('disable_collision', False), # or render_figure,
-                ) 
+                )
         
         self.object_names = list(self.objects.keys())
         self.object = None 
@@ -544,8 +547,13 @@ class BaseEnv:
 
         if self.n_objects == 1:
             if self.object.demo_dofs is not None:
-                targets = self.object.demo_dofs[step][None].repeat(len(env_idxs), 1) 
-                self.object.entity.set_dofs_position(targets) 
+                targets = self.object.demo_dofs[step][None].repeat(len(env_idxs), 1)
+                self.object.entity.set_dofs_position(targets)
+        elif self.n_objects >= 2:
+            # OakInk rigid objects: set each object's full root pose (+ frozen joint) from its
+            # demo so the kinematic replay shows hands + both objects exactly as in the reference.
+            for obj in self.objects.values():
+                obj.set_to_demo_step(step)
         self.scene.step()
         self.episode_length_buf += 1 
         self._compute_intermediate_values()
@@ -643,12 +651,40 @@ class BaseEnv:
         self.obs_sum[:] += torch.abs(self.obs_buf)  
         return self.obs_buf, None, self.rew_buf, self.reset_buf, self.extras
     
+    def _compute_multiobject_task_reward(self):
+        """OakInk two-object task reward: per-object pose tracking, meaned over objects.
+
+        Returns (mean_task_rew, merged_rew_dict) for compute_reward's precomputed_task hook.
+        """
+        task_list, dicts = [], []
+        for name in self.object_names:
+            obj = self.objects[name]
+            demo_pos = self.reward_module.match_demo_state(f"obj_pos::{name}", self.episode_length_buf)
+            demo_quat = self.reward_module.match_demo_state(f"obj_quat::{name}", self.episode_length_buf)
+            t_rew, t_dict = self.reward_module.compute_task_reward(
+                obj.root_pos, obj.root_quat, obj.dof_pos, demo_pos, demo_quat, self.episode_length_buf
+            )
+            task_list.append(t_rew)
+            dicts.append(t_dict)
+        mean_task = torch.stack(task_list, dim=0).mean(dim=0)
+        merged = dict(dicts[0])
+        merged["task_rew"] = mean_task.clone()
+        for kk in ("pos_dist", "rot_dist", "arti_dist"):
+            if all(kk in d for d in dicts):
+                merged[kk] = torch.stack([d[kk] for d in dicts], dim=0).mean(dim=0)
+        if all("well_track" in d for d in dicts):
+            merged["well_track"] = torch.stack([d["well_track"] for d in dicts], dim=0).all(dim=0)
+        return mean_task, merged
+
     def _get_rewards(self):
+        precomputed_task = None
         if self.n_objects == 1:
             obj = self.objects[self.object_names[0]]
             obj_pos, obj_quat, obj_arti = obj.root_pos, obj.root_quat, obj.dof_pos
         else:
             obj_pos, obj_quat, obj_arti = None, None, None
+            if self.n_objects >= 2:
+                precomputed_task = self._compute_multiobject_task_reward()
         bc_dist = torch.cat([robot.get_bc_dist() for robot in self.robots.values()], dim=-1)
         reward_kwargs = dict(
             actions=self.actions,
@@ -666,6 +702,7 @@ class BaseEnv:
             wrist_pose_left=self.robots['left'].wrist_pose,
             wrist_pose_right=self.robots['right'].wrist_pose,
             contact_forces=None,
+            precomputed_task=precomputed_task,
             )
         if self.use_contact_reward:
             reward_kwargs.update(
@@ -693,7 +730,9 @@ class BaseEnv:
         task_rewards = rew_dict['task_rew'] # use task_rew for reset
         task_rewards[self.nan_envs] = -1.0
         rew_dict['task_rew'] = task_rewards
-        self.cumulative_task_rew[:] += task_rewards if self.n_objects == 1 else rewards 
+        # task_rewards is the (per-object-mean for OakInk) task reward in [0,1]; use it for the
+        # early-reset curriculum threshold in both the single- and multi-object cases.
+        self.cumulative_task_rew[:] += task_rewards
         
         if 'con_rew' in rew_dict:
             con_rew = rew_dict['con_rew']
@@ -721,10 +760,11 @@ class BaseEnv:
             return timeout, timeout # always let it run to last frame for eval
         
         object_fell_off = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
-        first_obj = None
         if self.n_objects == 1:
-            first_obj = self.objects[self.object_names[0]]
-            object_fell_off = first_obj.root_pos[:, 2] < self.table_height
+            object_fell_off = self.objects[self.object_names[0]].root_pos[:, 2] < self.table_height
+        elif self.n_objects >= 2:
+            for obj in self.objects.values():
+                object_fell_off = object_fell_off | (obj.root_pos[:, 2] < self.table_height)
         
         need_reset = timeout | object_fell_off | self.nan_envs
         
@@ -883,7 +923,16 @@ class BaseEnv:
         if len(env_idxs) == 0:
             return  
         self.randomization.on_reset_idx(env_idxs)
-        progressed = self.episode_length_buf[env_idxs] - self.episode_start_buf[env_idxs]
+        # RSI-safe curriculum progress: when not chunked, measure the FINAL FRAME REACHED
+        # (trajectory completion), not steps-from-start. Otherwise a mid-trajectory RSI start that
+        # runs to the end is counted as a short episode, the achieved-length gate is never met, and
+        # the object-gain curriculum never decays (object stays helped -> drops at eval). Identical
+        # to the old metric when RSI is off (episode_start_buf == 0). Chunked training keeps the
+        # per-chunk step count.
+        if self.chunk_ep_length > 0:
+            progressed = self.episode_length_buf[env_idxs] - self.episode_start_buf[env_idxs]
+        else:
+            progressed = self.episode_length_buf[env_idxs]
         progressed_avg = torch.mean(progressed.float()).item()
         self.max_achieved_length = int(self.max_achieved_length * 0.5 + progressed_avg * 0.5)
 

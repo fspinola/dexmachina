@@ -60,7 +60,41 @@ def get_arctic_object_cfg(name="box", convexify=True, decomp=True, texture_mesh=
     assert os.path.exists(obj_cfg['top_mesh_fname']), f"{obj_cfg['top_mesh_fname']} does not exist"
     return obj_cfg
 
- 
+
+def get_oakink_object_cfg(name="O02_0030_00002", convexify=True, side="right"):
+    """Config for a staged OakInk RIGID object (dexmachina/assets/oakink/<name>/object.urdf).
+
+    The URDF carries a frozen dummy revolute joint (limits [0,0]) so it satisfies the
+    single-movable-joint assert while staying rigid; actuated=False and a demo articulation
+    of 0 make the articulation reward a no-op. ``contact_sides`` records which hand this
+    object is paired to (used later by the contact reward; harmless for task+imitation).
+    base_init_pos/quat are placeholders -- overwritten from the demo's frame 0.
+    """
+    data_dir = get_asset_path("oakink")
+    urdf_path = join(data_dir, f"{name}/object.urdf")
+    assert os.path.exists(urdf_path), f"{urdf_path} does not exist (stage with stage_oakink_objects.py)"
+    return {
+        "name": name,
+        "base_init_pos": [0.0, 0.0, 0.6],
+        "base_init_quat": [1.0, 0.0, 0.0, 0.0],
+        "base_init_qpos": [0.0],
+        "num_sample_vertics": 300,
+        "convexify": convexify,
+        "fixed": False,
+        "actuated": False,
+        "kp": 1000.0,
+        "kv": 100.0,
+        "force_range": 200.0,
+        "collect_data": False,
+        "offset_pos": [0.0, 0.0, 0.0],
+        "color": None,
+        "show_link_frame": False,
+        "contact_sides": [side],
+        "urdf_path": urdf_path,
+        "mesh_fname": join(data_dir, name, "collision.obj"),
+    }
+
+
 class ArticulatedObject:
     """ Assume only one joint """
     def __init__(

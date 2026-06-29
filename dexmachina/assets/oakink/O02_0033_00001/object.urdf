@@ -1,0 +1,39 @@
+<?xml version="1.0" ?>
+<robot name="O02_0033_00001">
+  <material name="obj_color">
+    <color rgba="1.0 0.4235 0.0392 1.0"/>
+  </material>
+  <link name="base">
+    <inertial>
+      <origin rpy="0 0 0" xyz="1.274110289648854e-05 9.261536302952969e-05 -0.0017973991695255764"/>
+      <mass value="0.02"/>
+      <inertia ixx="4.820719882004993e-05" ixy="-3.1280077492532374e-09" ixz="-1.6543406578789387e-08" iyy="4.794836254876833e-05" iyz="3.0215433022853576e-08" izz="3.6065923145557245e-07"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry><mesh filename="visual.ply" scale="1 1 1"/></geometry>
+      <material name="obj_color"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry><mesh filename="collision.obj" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <!-- Massless child + frozen revolute joint: satisfies DexMachina's single-movable-joint
+       assert while keeping the object rigid (limits [0,0], actuated=False, demo arti=0). -->
+  <link name="tip_dummy">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1e-06"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
+  <joint name="rotation" type="revolute">
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="tip_dummy"/>
+    <dynamics damping="0.01" friction="0.0"/>
+    <limit effort="50" velocity="50" lower="0" upper="0"/>
+  </joint>
+</robot>

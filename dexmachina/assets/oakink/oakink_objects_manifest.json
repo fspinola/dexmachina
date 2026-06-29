@@ -1,0 +1,744 @@
+[
+  {
+    "obj_id": "C10001",
+    "name": "C10001",
+    "urdf": "C10001/object.urdf",
+    "mass": 0.1975140133640315,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "C11001",
+    "name": "C11001",
+    "urdf": "C11001/object.urdf",
+    "mass": 0.1389175923314745,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "C12001",
+    "name": "C12001",
+    "urdf": "C12001/object.urdf",
+    "mass": 0.114,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "C14001",
+    "name": "C14001",
+    "urdf": "C14001/object.urdf",
+    "mass": 0.19672332166178566,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "C43001",
+    "name": "C43001",
+    "urdf": "C43001/object.urdf",
+    "mass": 0.15403327352066862,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "C51001",
+    "name": "C51001",
+    "urdf": "C51001/object.urdf",
+    "mass": 0.0662371230534247,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0003@00004",
+    "name": "O02_0003_00004",
+    "urdf": "O02_0003_00004/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0003@00005",
+    "name": "O02_0003_00005",
+    "urdf": "O02_0003_00005/object.urdf",
+    "mass": 0.041395338992823875,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0010@00003",
+    "name": "O02_0010_00003",
+    "urdf": "O02_0010_00003/object.urdf",
+    "mass": 0.2077295324634451,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0011@00001",
+    "name": "O02_0011_00001",
+    "urdf": "O02_0011_00001/object.urdf",
+    "mass": 0.028492636181704042,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0011@00002",
+    "name": "O02_0011_00002",
+    "urdf": "O02_0011_00002/object.urdf",
+    "mass": 0.09585590894412858,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0011@00003",
+    "name": "O02_0011_00003",
+    "urdf": "O02_0011_00003/object.urdf",
+    "mass": 0.12,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0013@00004",
+    "name": "O02_0013_00004",
+    "urdf": "O02_0013_00004/object.urdf",
+    "mass": 0.04308782776283133,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0013@00005",
+    "name": "O02_0013_00005",
+    "urdf": "O02_0013_00005/object.urdf",
+    "mass": 1.0,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00001",
+    "name": "O02_0015_00001",
+    "urdf": "O02_0015_00001/object.urdf",
+    "mass": 0.027,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00002",
+    "name": "O02_0015_00002",
+    "urdf": "O02_0015_00002/object.urdf",
+    "mass": 0.101,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00004",
+    "name": "O02_0015_00004",
+    "urdf": "O02_0015_00004/object.urdf",
+    "mass": 0.053423934294043386,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00005",
+    "name": "O02_0015_00005",
+    "urdf": "O02_0015_00005/object.urdf",
+    "mass": 0.7146208519800084,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00007",
+    "name": "O02_0015_00007",
+    "urdf": "O02_0015_00007/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00008",
+    "name": "O02_0015_00008",
+    "urdf": "O02_0015_00008/object.urdf",
+    "mass": 0.1049870855335317,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00010",
+    "name": "O02_0015_00010",
+    "urdf": "O02_0015_00010/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00011",
+    "name": "O02_0015_00011",
+    "urdf": "O02_0015_00011/object.urdf",
+    "mass": 0.10470949702666209,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00013",
+    "name": "O02_0015_00013",
+    "urdf": "O02_0015_00013/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00014",
+    "name": "O02_0015_00014",
+    "urdf": "O02_0015_00014/object.urdf",
+    "mass": 0.10449165813021452,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00016",
+    "name": "O02_0015_00016",
+    "urdf": "O02_0015_00016/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00017",
+    "name": "O02_0015_00017",
+    "urdf": "O02_0015_00017/object.urdf",
+    "mass": 0.10478748199060878,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00019",
+    "name": "O02_0015_00019",
+    "urdf": "O02_0015_00019/object.urdf",
+    "mass": 0.04479996785176636,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00020",
+    "name": "O02_0015_00020",
+    "urdf": "O02_0015_00020/object.urdf",
+    "mass": 0.3121462388006732,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00022",
+    "name": "O02_0015_00022",
+    "urdf": "O02_0015_00022/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00023",
+    "name": "O02_0015_00023",
+    "urdf": "O02_0015_00023/object.urdf",
+    "mass": 0.1045955962160365,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00025",
+    "name": "O02_0015_00025",
+    "urdf": "O02_0015_00025/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0015@00026",
+    "name": "O02_0015_00026",
+    "urdf": "O02_0015_00026/object.urdf",
+    "mass": 0.3793782935446434,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0017@00001",
+    "name": "O02_0017_00001",
+    "urdf": "O02_0017_00001/object.urdf",
+    "mass": 0.3210261618826285,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0017@00002",
+    "name": "O02_0017_00002",
+    "urdf": "O02_0017_00002/object.urdf",
+    "mass": 0.31548958235646424,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0018@00001",
+    "name": "O02_0018_00001",
+    "urdf": "O02_0018_00001/object.urdf",
+    "mass": 0.45197297177138485,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0018@00002",
+    "name": "O02_0018_00002",
+    "urdf": "O02_0018_00002/object.urdf",
+    "mass": 1.0,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0019@00001",
+    "name": "O02_0019_00001",
+    "urdf": "O02_0019_00001/object.urdf",
+    "mass": 1.0,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0019@00002",
+    "name": "O02_0019_00002",
+    "urdf": "O02_0019_00002/object.urdf",
+    "mass": 0.8251172157946305,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0020@00001",
+    "name": "O02_0020_00001",
+    "urdf": "O02_0020_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0020@00002",
+    "name": "O02_0020_00002",
+    "urdf": "O02_0020_00002/object.urdf",
+    "mass": 0.06389600199457655,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0025@00001",
+    "name": "O02_0025_00001",
+    "urdf": "O02_0025_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0026@00001",
+    "name": "O02_0026_00001",
+    "urdf": "O02_0026_00001/object.urdf",
+    "mass": 1.0,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0028@00001",
+    "name": "O02_0028_00001",
+    "urdf": "O02_0028_00001/object.urdf",
+    "mass": 0.04920153433430605,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0029@00001",
+    "name": "O02_0029_00001",
+    "urdf": "O02_0029_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0029@00002",
+    "name": "O02_0029_00002",
+    "urdf": "O02_0029_00002/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0029@00007",
+    "name": "O02_0029_00007",
+    "urdf": "O02_0029_00007/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0029@00008",
+    "name": "O02_0029_00008",
+    "urdf": "O02_0029_00008/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0029@00009",
+    "name": "O02_0029_00009",
+    "urdf": "O02_0029_00009/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0029@00011",
+    "name": "O02_0029_00011",
+    "urdf": "O02_0029_00011/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0029@00012",
+    "name": "O02_0029_00012",
+    "urdf": "O02_0029_00012/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0030@00002",
+    "name": "O02_0030_00002",
+    "urdf": "O02_0030_00002/object.urdf",
+    "mass": 0.0144,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0031@00002",
+    "name": "O02_0031_00002",
+    "urdf": "O02_0031_00002/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0032@00001",
+    "name": "O02_0032_00001",
+    "urdf": "O02_0032_00001/object.urdf",
+    "mass": 0.07763044642288153,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0032@00002",
+    "name": "O02_0032_00002",
+    "urdf": "O02_0032_00002/object.urdf",
+    "mass": 0.06494313855380612,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0033@00001",
+    "name": "O02_0033_00001",
+    "urdf": "O02_0033_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0033@00002",
+    "name": "O02_0033_00002",
+    "urdf": "O02_0033_00002/object.urdf",
+    "mass": 0.014,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0035@00001",
+    "name": "O02_0035_00001",
+    "urdf": "O02_0035_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0035@00002",
+    "name": "O02_0035_00002",
+    "urdf": "O02_0035_00002/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0037@00001",
+    "name": "O02_0037_00001",
+    "urdf": "O02_0037_00001/object.urdf",
+    "mass": 0.025388808462018422,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0037@00002",
+    "name": "O02_0037_00002",
+    "urdf": "O02_0037_00002/object.urdf",
+    "mass": 0.024211522950264516,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0038@00001",
+    "name": "O02_0038_00001",
+    "urdf": "O02_0038_00001/object.urdf",
+    "mass": 0.25131186202889977,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0039@00001",
+    "name": "O02_0039_00001",
+    "urdf": "O02_0039_00001/object.urdf",
+    "mass": 1.0,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0039@00002",
+    "name": "O02_0039_00002",
+    "urdf": "O02_0039_00002/object.urdf",
+    "mass": 0.8897050342508209,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0039@00004",
+    "name": "O02_0039_00004",
+    "urdf": "O02_0039_00004/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0044@00001",
+    "name": "O02_0044_00001",
+    "urdf": "O02_0044_00001/object.urdf",
+    "mass": 0.14292223539607127,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0044@00002",
+    "name": "O02_0044_00002",
+    "urdf": "O02_0044_00002/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0045@00001",
+    "name": "O02_0045_00001",
+    "urdf": "O02_0045_00001/object.urdf",
+    "mass": 0.4624959242776808,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0045@00002",
+    "name": "O02_0045_00002",
+    "urdf": "O02_0045_00002/object.urdf",
+    "mass": 0.2512036335928344,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0047@00001",
+    "name": "O02_0047_00001",
+    "urdf": "O02_0047_00001/object.urdf",
+    "mass": 0.04623570638106292,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0047@00002",
+    "name": "O02_0047_00002",
+    "urdf": "O02_0047_00002/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0048@00001",
+    "name": "O02_0048_00001",
+    "urdf": "O02_0048_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0048@00002",
+    "name": "O02_0048_00002",
+    "urdf": "O02_0048_00002/object.urdf",
+    "mass": 0.15070400946871765,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0049@00001",
+    "name": "O02_0049_00001",
+    "urdf": "O02_0049_00001/object.urdf",
+    "mass": 0.15169692327159184,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0053@00001",
+    "name": "O02_0053_00001",
+    "urdf": "O02_0053_00001/object.urdf",
+    "mass": 0.34083089116993165,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0053@00002",
+    "name": "O02_0053_00002",
+    "urdf": "O02_0053_00002/object.urdf",
+    "mass": 0.4480616615004645,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0054@00001",
+    "name": "O02_0054_00001",
+    "urdf": "O02_0054_00001/object.urdf",
+    "mass": 1.0,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0055@00001",
+    "name": "O02_0055_00001",
+    "urdf": "O02_0055_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0055@00002",
+    "name": "O02_0055_00002",
+    "urdf": "O02_0055_00002/object.urdf",
+    "mass": 0.06170452221620458,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0056@00001",
+    "name": "O02_0056_00001",
+    "urdf": "O02_0056_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0056@00002",
+    "name": "O02_0056_00002",
+    "urdf": "O02_0056_00002/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0060@00001",
+    "name": "O02_0060_00001",
+    "urdf": "O02_0060_00001/object.urdf",
+    "mass": 0.05728489266177345,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0060@00002",
+    "name": "O02_0060_00002",
+    "urdf": "O02_0060_00002/object.urdf",
+    "mass": 0.14035458404224005,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0080@00001",
+    "name": "O02_0080_00001",
+    "urdf": "O02_0080_00001/object.urdf",
+    "mass": 0.339075938298539,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0081@00001",
+    "name": "O02_0081_00001",
+    "urdf": "O02_0081_00001/object.urdf",
+    "mass": 0.060576941085002625,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0090@00001",
+    "name": "O02_0090_00001",
+    "urdf": "O02_0090_00001/object.urdf",
+    "mass": 0.02755887443824832,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0090@00002",
+    "name": "O02_0090_00002",
+    "urdf": "O02_0090_00002/object.urdf",
+    "mass": 0.05899156549083876,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0092@00001",
+    "name": "O02_0092_00001",
+    "urdf": "O02_0092_00001/object.urdf",
+    "mass": 0.023061719736878573,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0092@00002",
+    "name": "O02_0092_00002",
+    "urdf": "O02_0092_00002/object.urdf",
+    "mass": 0.06105580469920881,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0094@00001",
+    "name": "O02_0094_00001",
+    "urdf": "O02_0094_00001/object.urdf",
+    "mass": 0.06743628736258327,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0094@00004",
+    "name": "O02_0094_00004",
+    "urdf": "O02_0094_00004/object.urdf",
+    "mass": 0.06954078809740036,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0100@00001",
+    "name": "O02_0100_00001",
+    "urdf": "O02_0100_00001/object.urdf",
+    "mass": 0.4234997181499685,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0200@00001",
+    "name": "O02_0200_00001",
+    "urdf": "O02_0200_00001/object.urdf",
+    "mass": 0.06708097314649399,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0201@00001",
+    "name": "O02_0201_00001",
+    "urdf": "O02_0201_00001/object.urdf",
+    "mass": 0.29080234709717256,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0202@00001",
+    "name": "O02_0202_00001",
+    "urdf": "O02_0202_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0202@00002",
+    "name": "O02_0202_00002",
+    "urdf": "O02_0202_00002/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0203@00001",
+    "name": "O02_0203_00001",
+    "urdf": "O02_0203_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0203@00002",
+    "name": "O02_0203_00002",
+    "urdf": "O02_0203_00002/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0204@00001",
+    "name": "O02_0204_00001",
+    "urdf": "O02_0204_00001/object.urdf",
+    "mass": 0.39050288574177594,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0205@00001",
+    "name": "O02_0205_00001",
+    "urdf": "O02_0205_00001/object.urdf",
+    "mass": 0.026930275126400432,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0206@00001",
+    "name": "O02_0206_00001",
+    "urdf": "O02_0206_00001/object.urdf",
+    "mass": 0.02,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O02@0206@00002",
+    "name": "O02_0206_00002",
+    "urdf": "O02_0206_00002/object.urdf",
+    "mass": 0.163,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "O93001",
+    "name": "O93001",
+    "urdf": "O93001/object.urdf",
+    "mass": 0.08251581083466544,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "S10001",
+    "name": "S10001",
+    "urdf": "S10001/object.urdf",
+    "mass": 0.16960706126516967,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "S10020",
+    "name": "S10020",
+    "urdf": "S10020/object.urdf",
+    "mass": 0.20248056207770046,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "S10021",
+    "name": "S10021",
+    "urdf": "S10021/object.urdf",
+    "mass": 0.18565154211192306,
+    "n_collision_parts": 1
+  },
+  {
+    "obj_id": "S20005",
+    "name": "S20005",
+    "urdf": "S20005/object.urdf",
+    "mass": 0.03620970728822222,
+    "n_collision_parts": 1
+  }
+]

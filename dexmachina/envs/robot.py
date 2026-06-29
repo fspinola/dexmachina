@@ -672,8 +672,12 @@ class BaseRobot:
         if episode_start is not None:
             assert episode_start.shape[0] == len(env_idxs), f"episode_start.shape={episode_start.shape} != {len(env_idxs)}" 
         # reset value buffers 
-        if episode_start is not None and self.action_mode in ['residual', 'kinematic', 'ff_residual'] and self.residual_qpos is not None:
-            # reset to residual qpos
+        if episode_start is not None and self.action_mode in ['residual', 'kinematic', 'ff_residual', 'hybrid', 'absolute', 'relative'] and self.residual_qpos is not None:
+            # RSI: co-initialize the hand to the REFERENCE pose at the (possibly random) start frame,
+            # so it matches the object (also reset to demo[start]) -- a valid mid-trajectory grasp.
+            # No-op for non-RSI resets since residual_qpos[0] == init_qpos. Previously hybrid/absolute/
+            # relative fell through to init_qpos (frame-0 pose), which broke RSI in hybrid (hand at
+            # frame 0 while the object was mid-trajectory).
             init_qpos = self.residual_qpos[episode_start] # shape (n_envs, ndof)
         else:
             init_qpos = self.init_qpos[env_idxs] 

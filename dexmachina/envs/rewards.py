@@ -100,15 +100,32 @@ class RewardModule:
 
     def load_demo(self, demo_data, retarget_data, device):
         self.demo_tensors = dict()
-        demo_keys = ["obj_pos", "obj_quat", "obj_arti"]
-        if self.contact_rew_weight > 0.0:
-            demo_keys += ["contact_links_left", "contact_links_right"]
-        
-        for key in demo_keys:
-            assert key in demo_data, f"{key} not in demo_data" 
-            self.demo_tensors[key] = torch.tensor(
-                demo_data[key], dtype=torch.float32, device=device
-            )
+        # OakInk multi-object demo: demo_data["objects"][<name>] = {obj_pos, obj_quat, obj_arti}.
+        # Store per-object pose targets under "obj_pos::<name>"/"obj_quat::<name>" plus a shared
+        # zero "obj_arti" (rigid objects) so compute_task_reward's internal arti lookup still works.
+        # ARCTIC (flat obj_pos/obj_quat/obj_arti) is unchanged.
+        self.demo_object_names = None
+        if isinstance(demo_data, dict) and "objects" in demo_data:
+            self.demo_object_names = list(demo_data["objects"].keys())
+            n_ref = 0
+            for name, od in demo_data["objects"].items():
+                for field in ("obj_pos", "obj_quat"):
+                    self.demo_tensors[f"{field}::{name}"] = torch.tensor(
+                        od[field], dtype=torch.float32, device=device
+                    )
+                n_ref = len(od["obj_pos"])
+            self.demo_tensors["obj_arti"] = torch.zeros(n_ref, dtype=torch.float32, device=device)
+            demo_len_key = f"obj_pos::{self.demo_object_names[0]}"
+        else:
+            demo_keys = ["obj_pos", "obj_quat", "obj_arti"]
+            if self.contact_rew_weight > 0.0:
+                demo_keys += ["contact_links_left", "contact_links_right"]
+            for key in demo_keys:
+                assert key in demo_data, f"{key} not in demo_data"
+                self.demo_tensors[key] = torch.tensor(
+                    demo_data[key], dtype=torch.float32, device=device
+                )
+            demo_len_key = "obj_pos"
 
         if self.use_imi_rew:
             for side in ['left', 'right']:
@@ -562,14 +579,21 @@ class RewardModule:
         wrist_pose_right,
         contact_forces, # shape (N, num_obj_links, num_hand_links, 3)
         episode_length_buf,
-    ):  
-        demo_pos = self.match_demo_state("obj_pos", episode_length_buf)
-        demo_quat = self.match_demo_state("obj_quat", episode_length_buf) 
-        rew, rew_dict = self.compute_task_reward(
-            obj_pos, obj_quat, obj_arti, 
-            demo_pos, demo_quat,
-            episode_length_buf
-        )
+        precomputed_task=None,
+    ):
+        # OakInk multi-object: the per-object task reward (mean over objects) is computed by
+        # the env and passed in, since there is no single "obj_pos" demo key. ARCTIC passes
+        # precomputed_task=None and computes the single-object task reward here as before.
+        if precomputed_task is not None:
+            rew, rew_dict = precomputed_task
+        else:
+            demo_pos = self.match_demo_state("obj_pos", episode_length_buf)
+            demo_quat = self.match_demo_state("obj_quat", episode_length_buf)
+            rew, rew_dict = self.compute_task_reward(
+                obj_pos, obj_quat, obj_arti,
+                demo_pos, demo_quat,
+                episode_length_buf
+            )
         if self.bc_rew_weight > 0.0:
             bc_rew = self.bc_rew_weight * torch.exp(-self.cfg["bc_beta"] * bc_dist)
             bc_rew = torch.mean(bc_rew, dim=-1)

@@ -46,7 +46,7 @@
     <parent link="L_forearm_roll_link"/>
     <child link="L_forearm_pitch_link"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-6.2" upper="6.2" effort="100" velocity="5"/>
+    <limit lower="-12.0" upper="12.0" effort="100" velocity="5"/>
   </joint>
   <link name="L_forearm_roll_link">
     <mass value="0.01"/>
@@ -60,7 +60,7 @@
     <parent link="L_forearm_pitch_link"/>
     <child link="L_forearm_yaw_link"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-6.2" upper="6.2" effort="100" velocity="5"/>
+    <limit lower="-12.0" upper="12.0" effort="100" velocity="5"/>
   </joint>
   <link name="L_forearm_pitch_link">
     <mass value="0.01"/>
@@ -75,7 +75,7 @@
     <child link="base_dummy_link"/>
     <axis xyz="0 -1 0"/>
     <origin rpy="0.00000 0.00000 0.00000" xyz="0 0 0"/>
-    <limit lower="-6.2" upper="6.2" effort="100" velocity="5"/>
+    <limit lower="-12.0" upper="12.0" effort="100" velocity="5"/>
   </joint>
   <link name="L_forearm_yaw_link">
     <mass value="0.01"/>

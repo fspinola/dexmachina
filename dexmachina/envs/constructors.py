@@ -5,7 +5,7 @@ from dexmachina.envs.base_env import BaseEnv, get_env_cfg
 from dexmachina.envs.randomizations import get_randomization_cfg
 from dexmachina.envs.curriculum import get_curriculum_cfg
 from dexmachina.envs.maniptrans_curr import get_maniptrans_cfg
-from dexmachina.envs.object import ArticulatedObject, get_arctic_object_cfg
+from dexmachina.envs.object import ArticulatedObject, get_arctic_object_cfg, get_oakink_object_cfg
 from dexmachina.envs.robot import BaseRobot, get_default_robot_cfg
 from dexmachina.envs.rewards import RewardModule, get_reward_cfg
 from dexmachina.envs.demo_data import get_demo_data, load_genesis_retarget_data 
@@ -22,6 +22,76 @@ def parse_clip_string(clip):
     subject = vals[3]
     use_clip = vals[4].replace('u', '') # just 01/02
     return obj_name, start, end, subject, use_clip
+
+def _get_oakink_env_cfg(args, device, reward_cfg):
+    """Assemble env_kwargs for an OakInk clip (task + imitation; contacts off).
+
+    Demo (per-object) and retarget data both come from the exported .pt
+    (export_dexmachina_oakink.py). Two rigid objects (one per hand) are configured via
+    get_oakink_object_cfg; the ARCTIC processed-demo path is bypassed entirely.
+    """
+    import torch
+    pt = args.oakink_pt
+    assert pt and os.path.exists(pt), f"--oakink_pt not found: {pt}"
+    full_len = len(next(iter(torch.load(pt, weights_only=False)["demo_data"]["objects"].values()))["obj_pos"])
+    demo_data, retarget_data = load_genesis_retarget_data(
+        given_data_fname=pt, frame_start=0, frame_end=full_len,
+    )
+    ep_len = full_len
+
+    object_cfgs = {}
+    for side, key in (("left", "object_left"), ("right", "object_right")):
+        name = demo_data[key]
+        if name in object_cfgs:  # shared-object clip: one object serves both hands
+            object_cfgs[name]["contact_sides"] = ["left", "right"]
+        else:
+            object_cfgs[name] = get_oakink_object_cfg(name=name, convexify=args.convexify_object, side=side)
+
+    env_cfg = get_env_cfg(use_visualizer=args.vis, show_viewer=args.vis, show_fps=args.show_fps)
+    env_cfg['num_envs'] = args.num_envs
+    env_cfg['episode_length'] = ep_len
+    env_cfg['observe_tip_dist'] = False           # asserts n_objects==1; off for OakInk
+    env_cfg['observe_contact_force'] = False       # contacts deferred (task+imitation milestone)
+    env_cfg['use_contact_reward'] = False
+    env_cfg['use_rl_games'] = args.use_rl_games
+    env_cfg['rand_init_ratio'] = args.rand_init_ratio
+    env_cfg['chunk_ep_length'] = args.chunk_ep_length
+    reward_cfg['contact_rew_weight'] = 0.0
+
+    robot_cfgs = {
+        'left': get_default_robot_cfg(name=args.hand, side='left'),
+        'right': get_default_robot_cfg(name=args.hand, side='right'),
+    }
+    for side in ['left', 'right']:
+        robot_cfgs[side]['action_mode'] = args.action_mode
+        robot_cfgs[side]['hybrid_scales'] = tuple(args.hybrid_scales)
+        robot_cfgs[side]['res_cap'] = args.res_cap
+        robot_cfgs[side]['show_keypoints'] = args.show_kpts
+        if args.hide_hand:
+            robot_cfgs[side]['visualization'] = False
+
+    rand_cfg = get_randomization_cfg(randomize=False)
+    curr_cfg = get_curriculum_cfg(dict())  # unused: objects are non-actuated -> use_curriculum stays False
+
+    env_kwargs = {
+        'env_cfg': env_cfg,
+        'robot_cfgs': robot_cfgs,
+        'object_cfgs': object_cfgs,
+        'reward_cfg': reward_cfg,
+        'demo_data': demo_data,
+        'retarget_data': retarget_data,
+        'device': device,
+        'visualize_contact': args.vis_contact,
+        'rand_cfg': rand_cfg,
+        'curriculum_cfg': curr_cfg,
+        'group_collisions': args.group_collisions,
+    }
+    if args.overlay:
+        env_kwargs['env_cfg']['env_spacing'] = (0.0, 0.0)
+    if args.n_envs_per_row is not None:
+        env_kwargs['env_cfg']['n_envs_per_row'] = int(args.n_envs_per_row)
+    return env_kwargs
+
 
 def get_all_env_cfg(args, device, load_retarget_data=True):
     num_envs = args.num_envs  
@@ -53,7 +123,10 @@ def get_all_env_cfg(args, device, load_retarget_data=True):
     reward_cfg['bc_beta'] = args.bc_beta
     reward_cfg['objdex_baseline'] = args.objdex_baseline    
     reward_cfg['multiply_all_rew'] = args.multiply_all_rew
-    
+
+    if getattr(args, 'oakink', False):
+        return _get_oakink_env_cfg(args, device, reward_cfg)
+
     assert args.clip is not None, "Please provide a clip name"
     obj_name, start, end, subject, use_clip = parse_clip_string(args.clip)
     args.arctic_object = obj_name
@@ -272,6 +345,10 @@ def get_common_argparser():
     parser.add_argument('--frame_start', '-fs', type=int, default=40)
     parser.add_argument('--frame_end', '-fe', type=int, default=200)
     parser.add_argument('--clip', '-cl', type=str, default="box-40-200-s01-u01")
+    parser.add_argument('--oakink', action='store_true',
+                        help='OakInk mode: load a per-object .pt (export_dexmachina_oakink.py) instead '
+                             'of the ARCTIC processed demo; two rigid objects, contacts off (task+imitation).')
+    parser.add_argument('--oakink_pt', type=str, default=None, help='Path to the exported OakInk .pt')
     parser.add_argument('--show_markers', action='store_true', help='Whether to show contact markers')
     parser.add_argument('--interp', type=int, default=1, help='Interpolation multiplier for the demo data')
     parser.add_argument('--seed', type=int, default=42) 
