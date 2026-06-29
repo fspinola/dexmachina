@@ -145,11 +145,12 @@ class RewardModule:
                         retarget_data[side]['wrist_pose'], dtype=torch.float32, device=device
                     )
         
-        # check all the data have the same first dim size 
+        # check all the data have the same first dim size (demo_len_key is "obj_pos" for ARCTIC,
+        # or the first object's "obj_pos::<name>" for the OakInk per-object demo)
         assert all(
-            [self.demo_tensors[key].shape[0] == self.demo_tensors["obj_pos"].shape[0] for key in self.demo_tensors.keys()]
+            [self.demo_tensors[key].shape[0] == self.demo_tensors[demo_len_key].shape[0] for key in self.demo_tensors.keys()]
         ), f"First dim size mismatch: {[self.demo_tensors[key].shape[0] for key in self.demo_tensors.keys()]}"
-        self.demo_length = self.demo_tensors["obj_pos"].shape[0] 
+        self.demo_length = self.demo_tensors[demo_len_key].shape[0]
         print(f"Loaded demo data with length {self.demo_length}")
     
     def get_demo_length(self):  
