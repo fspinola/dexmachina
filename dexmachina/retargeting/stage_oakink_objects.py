@@ -45,6 +45,29 @@ OAKINK_OBJ_MASS = {
 _DEFAULT_DENSITY = 300.0  # kg/m^3, light plastic/wood; only used when no measured mass
 _MASS_CLAMP = (0.02, 1.0)  # kg
 _OBJ_COLOR = (1.0, 0.4235, 0.0392, 1.0)
+# Cap the COLLISION hull vertex count. Raw scan hulls reach thousands of verts (bottle body
+# 3526, bowl 7844); convex-collision (GJK) cost scales with vertex count, so a full-res hull
+# made the OakInk sim ~4x slower than ARCTIC (whose tiny meshes are ~252 verts). Bound it.
+_MAX_COLL_VERTS = 128
+
+
+def _simplify_hull(mesh: trimesh.Trimesh, max_verts: int = _MAX_COLL_VERTS) -> trimesh.Trimesh:
+    """A low-vertex convex collider: farthest-point-sample the hull's verts, then re-hull.
+
+    Backend-free (no fast_simplification/open3d needed). The result is convex with <=max_verts
+    vertices and sits just inside the full hull (a hair smaller, fine for collision).
+    """
+    hull = mesh.convex_hull
+    v = np.asarray(hull.vertices, dtype=np.float64)
+    if len(v) <= max_verts:
+        return hull
+    sel = [0]
+    d = np.linalg.norm(v - v[0], axis=1)
+    for _ in range(max_verts - 1):
+        i = int(d.argmax())
+        sel.append(i)
+        d = np.minimum(d, np.linalg.norm(v - v[i], axis=1))
+    return trimesh.Trimesh(vertices=v[sel], process=False).convex_hull
 
 
 def sanitize_obj_id(obj_id: str) -> str:
@@ -171,17 +194,17 @@ def stage_object(obj_id: str, align_ds: Path, out_root: Path, use_coacd: bool) -
         return None
     hull = mesh.convex_hull
 
-    # Visual: keep the original scan; Collision: convex hull (default) or COACD parts.
+    # Visual: keep the original scan; Collision: low-vert convex hull (default) or COACD parts.
     mesh.export(out_dir / "visual.ply")
     if use_coacd:
         try:
             collision_fnames = _coacd_collision(mesh, out_dir)
         except Exception as exc:  # noqa: BLE001 - fall back loudly, don't silently ship a bad hull
             _LOG.warning("COACD failed for %s (%s); falling back to convex hull", obj_id, exc)
-            hull.export(out_dir / "collision.obj")
+            _simplify_hull(mesh).export(out_dir / "collision.obj")
             collision_fnames = ["collision.obj"]
     else:
-        hull.export(out_dir / "collision.obj")
+        _simplify_hull(mesh).export(out_dir / "collision.obj")  # bounded-vert convex collider
         collision_fnames = ["collision.obj"]
 
     mass, com, inertia = _mass_inertia(hull, obj_id)

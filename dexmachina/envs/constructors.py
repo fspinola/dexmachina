@@ -45,7 +45,9 @@ def _get_oakink_env_cfg(args, device, reward_cfg):
         if name in object_cfgs:  # shared-object clip: one object serves both hands
             object_cfgs[name]["contact_sides"] = ["left", "right"]
         else:
-            object_cfgs[name] = get_oakink_object_cfg(name=name, convexify=args.convexify_object, side=side)
+            # convexify=True: OakInk colliders are (low-vert) convex hulls; force convex
+            # treatment so Genesis does cheap convex-convex collision (not mesh-mesh).
+            object_cfgs[name] = get_oakink_object_cfg(name=name, convexify=True, side=side)
 
     env_cfg = get_env_cfg(use_visualizer=args.vis, show_viewer=args.vis, show_fps=args.show_fps)
     env_cfg['num_envs'] = args.num_envs
