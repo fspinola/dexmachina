@@ -162,7 +162,12 @@ class ArticulatedObject:
             surface=gs.surfaces.Smooth(color=obj_cfg.get("color")) if obj_cfg.get("color") is not None else None,
         )
         movable_joints = [joint for joint in entity.joints if joint.type in [gs.JOINT_TYPE.REVOLUTE, gs.JOINT_TYPE.PRISMATIC]]
-        assert len(movable_joints) == 1, f"len(movable_joints)={len(movable_joints)}"
+        # 0 movable joints => a true free rigid body (OakInk objects). Keep num_joints=1 as a
+        # VIRTUAL frozen articulation so all buffer/obs/reward/state_diff shapes stay identical
+        # to the articulated (ARCTIC) case; the entity dof-I/O is skipped (self.dof_idxs empty).
+        # This avoids the ill-conditioned massless-dummy-joint that made rigid objects ~4x slower.
+        assert len(movable_joints) <= 1, f"len(movable_joints)={len(movable_joints)}"
+        self.is_rigid = len(movable_joints) == 0
 
         self.texture_meshes = dict()
         if 'texture_meshes' in obj_cfg:
@@ -376,8 +381,9 @@ class ArticulatedObject:
         self.part_pos[:] = entity.get_links_pos() # this contains both parts!
         self.part_quat[:] = entity.get_links_quat()
 
-        self.dof_pos[:] = entity.get_dofs_position(self.dof_idxs)
-        self.dof_vel[:] = entity.get_dofs_velocity(self.dof_idxs)
+        if self.dof_idxs:  # rigid object has no real articulation dof -> keep virtual dof_pos=0
+            self.dof_pos[:] = entity.get_dofs_position(self.dof_idxs)
+            self.dof_vel[:] = entity.get_dofs_velocity(self.dof_idxs)
         self.contact_force[:] = entity.get_links_net_contact_force()
         if self.demo_states is not None:
             demo_goal_t = torch.where(
@@ -453,12 +459,13 @@ class ArticulatedObject:
 
         self.dof_pos[env_idxs, :] = init_qpos
         self.dof_vel[env_idxs, :] = 0.0
-        self.entity.set_dofs_position(
-            position=self.dof_pos[env_idxs],
-            dofs_idx_local=self.dof_idxs,
-            zero_velocity=True,
-            envs_idx=env_idxs,
-        )
+        if self.dof_idxs:  # rigid object: no articulation dof to set (root pose set below)
+            self.entity.set_dofs_position(
+                position=self.dof_pos[env_idxs],
+                dofs_idx_local=self.dof_idxs,
+                zero_velocity=True,
+                envs_idx=env_idxs,
+            )
         init_pos = self.init_pos
         if episode_start is not None and torch.any(episode_start):
             init_pos = self.demo_states[episode_start, :3].clone()
@@ -510,15 +517,16 @@ class ArticulatedObject:
             envs_idx=env_idxs,
         )
 
-        if len(joint_qpos.shape) == 1:
-            joint_qpos = joint_qpos[None]
-        assert joint_qpos.shape[-1] == self.num_joints, f"joint_qpos.shape={joint_qpos.shape}"
-        self.entity.set_dofs_position(
-            position=joint_qpos,
-            dofs_idx_local=self.dof_idxs,
-            zero_velocity=True,
-            envs_idx=env_idxs,
-        ) 
+        if self.dof_idxs:  # rigid object: no articulation dof to set (root pose set above)
+            if len(joint_qpos.shape) == 1:
+                joint_qpos = joint_qpos[None]
+            assert joint_qpos.shape[-1] == self.num_joints, f"joint_qpos.shape={joint_qpos.shape}"
+            self.entity.set_dofs_position(
+                position=joint_qpos,
+                dofs_idx_local=self.dof_idxs,
+                zero_velocity=True,
+                envs_idx=env_idxs,
+            )
         self.entity.zero_all_dofs_velocity(envs_idx=env_idxs)
         self.update_value_buffers()  
     

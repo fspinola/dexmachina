@@ -115,6 +115,9 @@ def _write_urdf(
     </collision>"""
         for c in collision_fnames
     )
+    # Single-link FREE RIGID body: no internal joint. DexMachina's ArticulatedObject treats
+    # 0 movable joints as rigid (virtual frozen arti); a free base (fixed=False) makes it
+    # dynamic. Avoids the ill-conditioned massless-dummy-joint that slowed the solver ~4x.
     urdf = f"""<?xml version="1.0" ?>
 <robot name="{name}">
   <material name="obj_color">
@@ -133,23 +136,6 @@ def _write_urdf(
     </visual>
 {collisions}
   </link>
-  <!-- Massless child + frozen revolute joint: satisfies DexMachina's single-movable-joint
-       assert while keeping the object rigid (limits [0,0], actuated=False, demo arti=0). -->
-  <link name="tip_dummy">
-    <inertial>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="1e-06"/>
-      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
-    </inertial>
-  </link>
-  <joint name="rotation" type="revolute">
-    <origin xyz="0 0 0"/>
-    <axis xyz="0 0 1"/>
-    <parent link="base"/>
-    <child link="tip_dummy"/>
-    <dynamics damping="0.01" friction="0.0"/>
-    <limit effort="50" velocity="50" lower="0" upper="0"/>
-  </joint>
 </robot>
 """
     urdf_path.write_text(urdf)
