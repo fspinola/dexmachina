@@ -115,6 +115,12 @@ class RewardModule:
                     )
                 n_ref = len(od["obj_pos"])
             self.demo_tensors["obj_arti"] = torch.zeros(n_ref, dtype=torch.float32, device=device)
+            # Per-side single-part contact_links (T, num_hand_links, 4)=[x,y,z,part_id(0/1)].
+            if self.contact_rew_weight > 0.0:
+                for side in ("left", "right"):
+                    key = f"contact_links_{side}"
+                    assert key in demo_data, f"{key} not in demo_data (needed for OakInk contact reward)"
+                    self.demo_tensors[key] = torch.tensor(demo_data[key], dtype=torch.float32, device=device)
             demo_len_key = f"obj_pos::{self.demo_object_names[0]}"
         else:
             demo_keys = ["obj_pos", "obj_quat", "obj_arti"]
@@ -563,6 +569,54 @@ class RewardModule:
         
         return contact_link_reshaped, contact_valid_reshaped
 
+    def _oakink_hand_contact_reward(self, policy_pos, policy_valid, wrist_pose, obj_pose,
+                                    demo_obj_pose, side, episode_length_buf):
+        """Single-part contact reward for one hand vs its own rigid OakInk object.
+
+        Point-cloud chamfer between the policy's per-link contacts and the demo contact_links
+        (both transformed into the object [+ optionally wrist] frame). Mirrors
+        compute_hand_contact_reward but for ONE object part (no top/bottom loop).
+        policy_pos (N,1,K,3), policy_valid (N,1,K); demo contact_links_{side} (N,K,4)=[xyz,part_id].
+        """
+        demo = self.match_demo_state(f"contact_links_{side}", episode_length_buf)
+        demo_pos = demo[:, :, :3]
+        demo_valid = demo[:, :, -1] > 0.0
+        pol_pos = policy_pos[:, 0, :, :3]
+        pol_valid = policy_valid[:, 0, :]
+        frames = ['obj'] + (['wrist'] if self.wrist_frame_contact else [])
+        rews, cdict = [], dict()
+        for frame in frames:
+            d_pose = demo_obj_pose if frame == 'obj' else self.match_demo_state(f"wrist_pose_{side}", episode_length_buf)
+            p_pose = obj_pose if frame == 'obj' else wrist_pose
+            dist = chamfer_distance(
+                transform_contact(pol_pos, p_pose), transform_contact(demo_pos, d_pose),
+                pol_valid, demo_valid,
+            )
+            rew = self.contact_dist_to_rew(dist, self.contact_rew_function)
+            both_zero = (pol_valid.sum(dim=-1) == 0) & (demo_valid.sum(dim=-1) == 0)
+            rew = torch.where(both_zero, torch.zeros_like(rew) if self.mask_zero_contact else torch.ones_like(rew), rew)
+            rews.append(rew)
+            cdict[f"CD_{side}_frame_{frame}"] = dist
+        contact_rew = torch.stack(rews, dim=-1)
+        contact_rew = contact_rew.prod(dim=-1) if self.multiply_frame_contact else contact_rew.mean(dim=-1)
+        cdict[f"contact_rew_{side}"] = contact_rew
+        return contact_rew, cdict
+
+    def compute_oakink_contact_reward(self, contact_link_pos_left, contact_link_valid_left,
+                                      contact_link_pos_right, contact_link_valid_right,
+                                      wrist_pose_left, wrist_pose_right,
+                                      obj_pose_left, obj_pose_right,
+                                      demo_obj_pose_left, demo_obj_pose_right, episode_length_buf):
+        """OakInk contact reward: each hand vs its own single-part object, meaned over hands."""
+        rl, dl = self._oakink_hand_contact_reward(
+            contact_link_pos_left, contact_link_valid_left, wrist_pose_left,
+            obj_pose_left, demo_obj_pose_left, 'left', episode_length_buf)
+        rr, dr = self._oakink_hand_contact_reward(
+            contact_link_pos_right, contact_link_valid_right, wrist_pose_right,
+            obj_pose_right, demo_obj_pose_right, 'right', episode_length_buf)
+        contact_rew = (rl + rr) / 2.0 * self.contact_rew_weight
+        return contact_rew, {**dl, **dr, 'con_rew': contact_rew}
+
     def compute_reward(
         self, 
         actions,
@@ -581,6 +635,10 @@ class RewardModule:
         contact_forces, # shape (N, num_obj_links, num_hand_links, 3)
         episode_length_buf,
         precomputed_task=None,
+        obj_pose_left=None,       # OakInk: per-hand object pose (current) + demo target,
+        obj_pose_right=None,      # for the single-part per-object contact reward.
+        demo_obj_pose_left=None,
+        demo_obj_pose_right=None,
     ):
         # OakInk multi-object: the per-object task reward (mean over objects) is computed by
         # the env and passed in, since there is no single "obj_pos" demo key. ARCTIC passes
@@ -613,7 +671,19 @@ class RewardModule:
             # rew += imi_rew
             rew_dict.update(imi_rew_dict)
  
-        if self.contact_rew_weight > 0.0: 
+        if self.contact_rew_weight > 0.0 and self.demo_object_names is not None:
+            # OakInk: each hand's single-part contacts vs its own object (poses passed in).
+            contact_rew, contact_dict = self.compute_oakink_contact_reward(
+                contact_link_pos_left, contact_link_valid_left,
+                contact_link_pos_right, contact_link_valid_right,
+                wrist_pose_left, wrist_pose_right,
+                obj_pose_left, obj_pose_right,
+                demo_obj_pose_left, demo_obj_pose_right, episode_length_buf,
+            )
+            if "well_track" in rew_dict and self.mask_well_track:
+                contact_rew = torch.where(rew_dict["well_track"], torch.zeros_like(contact_rew), contact_rew)
+            rew_dict.update(contact_dict)
+        elif self.contact_rew_weight > 0.0:
             obj_pose = torch.cat([obj_pos, obj_quat], dim=1)
             demo_pose = torch.cat([demo_pos, demo_quat], dim=1)
             if self.use_retarget_contact:

@@ -381,17 +381,33 @@ class BaseEnv:
         if self.n_objects == 0:
             self.observe_contact_force = False
             print("Disabling contact force observation because no object")
-        self.use_contact_reward = env_cfg.get('use_contact_reward', False) 
+        self.use_contact_reward = env_cfg.get('use_contact_reward', False)
+        self.oakink_contacts = self.n_objects >= 2  # OakInk: one single-link object per hand
         if self.observe_contact_force or self.use_contact_reward:
-            self.num_obj_links = len(self.object.coll_idxs_global)
-            self.num_robot_links = sum([len(robot.coll_idxs_global) for robot in self.robots.values()])
+            if self.oakink_contacts:
+                # Each hand contacts its OWN object (cfg['contact_sides']); single-link rigid.
+                self.side_object = {}
+                for name, obj in self.objects.items():
+                    for s in obj.cfg.get('contact_sides', ['left', 'right']):
+                        self.side_object[s] = obj
+                assert set(self.side_object) == {'left', 'right'}, \
+                    "OakInk contacts need exactly one object per hand (contact_sides)"
+                self.contact_filter_a = {s: torch.tensor(self.side_object[s].coll_idxs_global, device=self.device)
+                                         for s in ('left', 'right')}
+                self.contact_filter_b = {s: torch.tensor(self.robots[s].coll_idxs_global, device=self.device)
+                                         for s in ('left', 'right')}
+                self.num_hand_links = {s: len(self.robots[s].coll_idxs_global) for s in ('left', 'right')}
+                self.num_obj_links = 1
+            else:
+                self.num_obj_links = len(self.object.coll_idxs_global)
+                self.num_robot_links = sum([len(robot.coll_idxs_global) for robot in self.robots.values()])
 
-            self.filter_links_a = torch.tensor(self.object.coll_idxs_global, device=self.device)
-            self.filter_links_b = torch.tensor(
-                self.robots['left'].coll_idxs_global + self.robots['right'].coll_idxs_global, 
-                device=self.device
-                )
-            self.num_left_contact_links = len(self.robots['left'].coll_idxs_global)
+                self.filter_links_a = torch.tensor(self.object.coll_idxs_global, device=self.device)
+                self.filter_links_b = torch.tensor(
+                    self.robots['left'].coll_idxs_global + self.robots['right'].coll_idxs_global,
+                    device=self.device
+                    )
+                self.num_left_contact_links = len(self.robots['left'].coll_idxs_global)
 
             print("num_obj_links", self.num_obj_links) 
         
@@ -522,12 +538,21 @@ class BaseEnv:
             self.kpt_dists_right = torch.zeros((self.num_envs, self.robots['right'].n_kpts, num_obj_parts), device=self.device)
 
         if self.observe_contact_force:
-            self.contact_forces = torch.zeros((self.num_envs, self.num_obj_links,  self.num_robot_links, 3), device=self.device) 
+            self.contact_forces = torch.zeros((self.num_envs, self.num_obj_links,  self.num_robot_links, 3), device=self.device)
 
         if self.use_contact_reward:
-            self.contact_link_pos = torch.zeros((self.num_envs, self.num_obj_links, self.num_robot_links, 3), device=self.device)
-            self.contact_link_valid = torch.zeros((self.num_envs, self.num_obj_links, self.num_robot_links), device=self.device, dtype=torch.bool)
-        self.extras = dict() 
+            if self.oakink_contacts:
+                # per-side single-object contacts: (N, 1 obj link, that hand's links, 3)
+                self.contact_link_pos_side = {
+                    s: torch.zeros((self.num_envs, 1, self.num_hand_links[s], 3), device=self.device)
+                    for s in ('left', 'right')}
+                self.contact_link_valid_side = {
+                    s: torch.zeros((self.num_envs, 1, self.num_hand_links[s]), device=self.device, dtype=torch.bool)
+                    for s in ('left', 'right')}
+            else:
+                self.contact_link_pos = torch.zeros((self.num_envs, self.num_obj_links, self.num_robot_links, 3), device=self.device)
+                self.contact_link_valid = torch.zeros((self.num_envs, self.num_obj_links, self.num_robot_links), device=self.device, dtype=torch.bool)
+        self.extras = dict()
     # def progress_episode_length(self):
     #     self.episode_length_buf += 1
     #     for k, robot in self.robots.items():
@@ -704,7 +729,19 @@ class BaseEnv:
             contact_forces=None,
             precomputed_task=precomputed_task,
             )
-        if self.use_contact_reward:
+        if self.use_contact_reward and self.oakink_contacts:
+            # OakInk: per-hand contacts against that hand's own object + per-object poses/targets.
+            ep = self.episode_length_buf
+            for s in ('left', 'right'):
+                obj = self.side_object[s]
+                reward_kwargs[f"contact_link_pos_{s}"] = self.contact_link_pos_side[s]
+                reward_kwargs[f"contact_link_valid_{s}"] = self.contact_link_valid_side[s]
+                reward_kwargs[f"obj_pose_{s}"] = torch.cat([obj.root_pos, obj.root_quat], dim=-1)
+                reward_kwargs[f"demo_obj_pose_{s}"] = torch.cat([
+                    self.reward_module.match_demo_state(f"obj_pos::{obj.name}", ep),
+                    self.reward_module.match_demo_state(f"obj_quat::{obj.name}", ep),
+                ], dim=-1)
+        elif self.use_contact_reward:
             reward_kwargs.update(
                 contact_link_pos_left=self.contact_link_pos[:, :, :self.num_left_contact_links], # N, 2, 13, 3
                 contact_link_valid_left=self.contact_link_valid[:, :, :self.num_left_contact_links],
@@ -823,10 +860,24 @@ class BaseEnv:
             obj.update_value_buffers() 
             self.nan_envs[:] = self.nan_envs | obj.get_nan_envs()
 
-        if self.observe_contact_force or self.use_contact_reward:
+        if self.oakink_contacts and self.use_contact_reward:
+            # OakInk: contacts of each hand vs ITS OWN single-link object.
+            for s in ('left', 'right'):
+                ci = get_filtered_contacts(
+                    entity_a=self.side_object[s].entity,
+                    entity_b=None,
+                    filter_links_a=self.contact_filter_a[s],
+                    filter_links_b=self.contact_filter_b[s],
+                    return_link_force=False,
+                    return_link_pos=True,
+                    device=self.device,
+                )
+                self.contact_link_pos_side[s][:] = ci['contact_pos_link_a']
+                self.contact_link_valid_side[s][:] = ci['contact_pos_link_a_valid']
+        elif self.observe_contact_force or self.use_contact_reward:
             entity_a = self.object.entity
             contact_info = get_filtered_contacts(
-                    entity_a=entity_a, 
+                    entity_a=entity_a,
                     entity_b=None,
                     filter_links_a=self.filter_links_a,
                     filter_links_b=self.filter_links_b,
@@ -834,7 +885,7 @@ class BaseEnv:
                     return_link_pos=self.use_contact_reward,
                     device=self.device ,
                 )
-                
+
             if self.observe_contact_force:
                 contact_force = contact_info["contact_force_link_a"] # shape (n_env, n_obj_links, n_robot_links, 3)
                 self.contact_forces[:] = contact_force
@@ -842,7 +893,7 @@ class BaseEnv:
                 self.contact_link_pos[:] = contact_info['contact_pos_link_a']
                 self.contact_link_valid[:] = contact_info['contact_pos_link_a_valid']
                 # vis left hand contact for now:
-            
+
         contact_dict = dict()
         for key in self.contact_markers.keys():
             source, part, side = key.split('_')

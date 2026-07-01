@@ -53,12 +53,14 @@ def _get_oakink_env_cfg(args, device, reward_cfg):
     env_cfg['num_envs'] = args.num_envs
     env_cfg['episode_length'] = ep_len
     env_cfg['observe_tip_dist'] = False           # asserts n_objects==1; off for OakInk
-    env_cfg['observe_contact_force'] = False       # contacts deferred (task+imitation milestone)
-    env_cfg['use_contact_reward'] = False
+    env_cfg['observe_contact_force'] = False       # no contact-force OBS for OakInk (reward-only contacts)
+    # Contact REWARD (per-object, single-part) is enabled by -con; needs the .pt to carry
+    # per-side contact_links (export_dexmachina_oakink.py --contacts). 0 => task+imitation only.
+    env_cfg['use_contact_reward'] = args.contact_rew_weight > 0
     env_cfg['use_rl_games'] = args.use_rl_games
     env_cfg['rand_init_ratio'] = args.rand_init_ratio
     env_cfg['chunk_ep_length'] = args.chunk_ep_length
-    reward_cfg['contact_rew_weight'] = 0.0
+    # keep reward_cfg['contact_rew_weight'] = args.contact_rew_weight (set earlier); do not zero
 
     robot_cfgs = {
         'left': get_default_robot_cfg(name=args.hand, side='left'),
