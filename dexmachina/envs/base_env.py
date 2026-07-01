@@ -1049,8 +1049,13 @@ class BaseEnv:
             self.contact_forces[env_idxs] = 0.0
         
         if self.use_contact_reward:
-            self.contact_link_pos[env_idxs] = 0.0
-            self.contact_link_valid[env_idxs] = False  
+            if self.oakink_contacts:
+                for s in ('left', 'right'):
+                    self.contact_link_pos_side[s][env_idxs] = 0.0
+                    self.contact_link_valid_side[s][env_idxs] = False
+            else:
+                self.contact_link_pos[env_idxs] = 0.0
+                self.contact_link_valid[env_idxs] = False
          
     def reset(self): 
         # reset all envs
