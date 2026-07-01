@@ -219,7 +219,13 @@ class BaseEnv:
         if self.chunk_ep_length <= 0:
             assert self.max_episode_length >= self.demo_length, f"Episode length {self.max_episode_length} != demo length {self.reward_module.demo_length}"
         
-        self.is_finite_horizon = True # need this for rlgames
+        # Set False so the rl_games wrapper populates extras["time_outs"] and PPO value_bootstrap
+        # (enabled in the ppo cfg) adds gamma*V(s) for TIME-LIMIT truncations instead of treating
+        # them as zero-value terminals. _get_dones() below returns a bootstrap mask that fires ONLY
+        # for artificial cuts (chunk / fixed-horizon RSI) while the reference motion is still ongoing,
+        # so for the current start-to-end config (episode ends exactly at the demo end) this is a
+        # semantic no-op; it becomes load-bearing once fixed-horizon RSI truncates mid-clip.
+        self.is_finite_horizon = False # partial-episode bootstrapping for time-limit truncations
         
         self.table_height = TABLE_HEIGHT
         self.device = device 
@@ -824,8 +830,18 @@ class BaseEnv:
                     need_reset = torch.where(
                         (stepped_length > interval), cum_rew < thres * interval, need_reset
                     )
-        return need_reset, timeout
-    
+        # Partial-episode bootstrapping (Pardo et al., "Time Limits in RL", 2018): the second return
+        # is rl_games' `time_outs` mask. It must select ONLY episodes cut by an artificial time limit
+        # (chunk / fixed-horizon-RSI truncation) whose reference motion has NOT ended -- those are
+        # truncations where the value fn should bootstrap gamma*V(s). Genuine end-of-clip timeouts
+        # (demo pointer reached the end) are true terminals, and failures (nan; object-fell-off, which
+        # lives in need_reset, NOT in `timeout`) must stay terminal. `timeout` already OR'd in nan_envs
+        # above, so strip it back out here. In the current start-to-end config this is all-False
+        # (episodes only ever time out AT the demo end); it activates under chunking / fixed-horizon RSI.
+        reached_demo_end = self.episode_length_buf >= self.demo_length
+        time_outs = timeout & (~reached_demo_end) & (~self.nan_envs)
+        return need_reset, time_outs
+
     def prepare_sliced_contact(self, source='policy', part='top', side='left'):
         """ this does not have to always return the same shape """
         if source == 'policy' and self.use_contact_reward:
