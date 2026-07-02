@@ -302,18 +302,23 @@ class BaseEnv:
             self.object = self.objects[self.object_names[0]] # only support one object for now
         self.n_objects = len(self.object_names) # might be 0!!
        
-        self.use_curriculum = False 
+        # Under fixed-horizon RSI, episodes are ~rsi_horizon steps (not the full clip), so the
+        # curriculum's decay gate (achieved_len >= max_episode_length-2) must reference the HORIZON,
+        # not the clip length -- else the gate never opens and the object gains never decay. reward
+        # normalization is fixed the same way in normalize_episode_rew().
+        _curr_gate_len = self.rsi_horizon if self.rsi_horizon > 0 else self.max_episode_length
+        self.use_curriculum = False
         self.curriculum = None
         if self.n_objects == 1 and self.object.actuated:
-            self.use_curriculum = True 
+            self.use_curriculum = True
             self.curriculum = Curriculum(
-                self.curr_cfg, 
+                self.curr_cfg,
                 task_object=self.object,
                 reward_keys=self.reward_keys,
                 num_envs=self.num_envs,
                 achieved_length=0,
-                max_episode_length=self.max_episode_length,
-            )        
+                max_episode_length=_curr_gate_len,
+            )
         elif self.curr_cfg.get('type', None) == 'maniptrans':
             print("Using ManipTrans curriculum for ablation")
             self.use_curriculum = True
@@ -323,7 +328,7 @@ class BaseEnv:
                 reward_keys=self.reward_keys,
                 num_envs=self.num_envs,
                 achieved_length=0,
-                max_episode_length=self.max_episode_length,
+                max_episode_length=_curr_gate_len,
                 sim=self.scene.sim,
                 rigid_solver=self.rigid_solver,
             )
@@ -1011,21 +1016,24 @@ class BaseEnv:
         return None
 
     def normalize_episode_rew(self, rewards: torch.Tensor):
-        # rewards should be shape (num_envs,)
-        avg_rew = rewards / self.max_episode_length
+        # `rewards` is the SUMMED per-episode reward; divide by the episode length to get the per-step
+        # average that the curriculum's reward gate expects. Under fixed-horizon RSI episodes are
+        # ~rsi_horizon steps (not the full clip), so dividing by max_episode_length would deflate the
+        # signal by ~clip/horizon and the reward gate would never open -> object gains never decay.
+        denom = self.rsi_horizon if self.rsi_horizon > 0 else self.max_episode_length
+        avg_rew = rewards / denom
         return avg_rew.mean().item()
 
     def reset_idx(self, env_idxs=[]):
         if len(env_idxs) == 0:
             return  
         self.randomization.on_reset_idx(env_idxs)
-        # RSI-safe curriculum progress: when not chunked, measure the FINAL FRAME REACHED
-        # (trajectory completion), not steps-from-start. Otherwise a mid-trajectory RSI start that
-        # runs to the end is counted as a short episode, the achieved-length gate is never met, and
-        # the object-gain curriculum never decays (object stays helped -> drops at eval). Identical
-        # to the old metric when RSI is off (episode_start_buf == 0). Chunked training keeps the
-        # per-chunk step count.
-        if self.chunk_ep_length > 0:
+        # Curriculum achieved-length metric. For FIXED-LENGTH windows (chunk OR fixed-horizon RSI)
+        # measure STEPS SURVIVED this window, not the absolute demo frame reached -- paired with the
+        # horizon-based gate (see curriculum construction), achieved -> rsi_horizon once the policy
+        # survives its window, so the object-gain decay can trigger. For plain start-to-end (no RSI,
+        # no chunk) keep the final-frame-reached metric (== steps-from-0 there anyway).
+        if self.chunk_ep_length > 0 or self.rsi_horizon > 0:
             progressed = self.episode_length_buf[env_idxs] - self.episode_start_buf[env_idxs]
         else:
             progressed = self.episode_length_buf[env_idxs]
@@ -1055,11 +1063,11 @@ class BaseEnv:
             # RSI: `torand` picks which resetting envs get a random (non-zero) reference start.
             torand = torch.rand(len(env_idxs), device=self.device) <= self.rand_init_ratio
             if self.rsi_horizon > 0:
-                # ManipTrans-style fixed-horizon RSI: sample the start UNIFORMLY over the whole clip
-                # (no max_achieved_length progress cap) so late phases are covered from epoch 0. The
-                # fixed horizon (see _get_dones) bounds each episode; starts near the end just run
-                # fewer steps to the demo end.
-                end_t = max(1, int(self.demo_length) - 1)
+                # ManipTrans-style fixed-horizon RSI: sample the start uniformly in [0, demo-horizon)
+                # so EVERY window runs a full `rsi_horizon` steps (start+horizon <= demo). Uniform
+                # full windows cover all phases from epoch 0 AND make the achieved-length gate
+                # reachable (steps-survived -> horizon). If horizon >= demo it degenerates to start 0.
+                end_t = max(1, int(self.demo_length) - self.rsi_horizon)
             else:
                 # legacy progress-gated RSI (start-to-end episodes): cap the start at how far the
                 # policy has actually reached, so it never resets into unseen late phases.
