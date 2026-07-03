@@ -332,27 +332,34 @@ class BaseEnv:
                 sim=self.scene.sim,
                 rigid_solver=self.rigid_solver,
             )
-        cardbox_size = (0.2,0.2,0.1)
-        if self.n_objects == 1 and 'notebook' in self.object_names[0]:
-            print("Adding a SMALLER cardboard box for notebook") 
-            cardbox_size = (0.15, 0.15, 0.1) # wider: cardbox_size = (0.25, 0.2, 0.1)
-        
-        cardbox_surface = gs.surfaces.Rough(roughness=0.1, color=(167/255, 134/255, 103/255, 1.0))
-        if env_cfg.get('texture_cardbox', False):
-            cardbox_surface = gs.surfaces.Default( 
-                diffuse_texture=gs.textures.ImageTexture(
-                    image_path='/home/mandi/chiral/assets/wood.jpg',
+        # The cardbox is an ARCTIC-only support surface placed under the single shared object.
+        # OakInk (n_objects >= 2) manipulates rigid objects in the air and its reference
+        # trajectories descend through this z; a fixed collider here blocks the object from
+        # tracking (task_rew ~ 0). Skip it entirely for OakInk (hide_cardbox only hid the
+        # visual, not the collision). ARCTIC (n_objects <= 1) is unchanged.
+        self.cardboard_box = None
+        if self.n_objects < 2:
+            cardbox_size = (0.2,0.2,0.1)
+            if self.n_objects == 1 and 'notebook' in self.object_names[0]:
+                print("Adding a SMALLER cardboard box for notebook")
+                cardbox_size = (0.15, 0.15, 0.1) # wider: cardbox_size = (0.25, 0.2, 0.1)
+
+            cardbox_surface = gs.surfaces.Rough(roughness=0.1, color=(167/255, 134/255, 103/255, 1.0))
+            if env_cfg.get('texture_cardbox', False):
+                cardbox_surface = gs.surfaces.Default(
+                    diffuse_texture=gs.textures.ImageTexture(
+                        image_path='/home/mandi/chiral/assets/wood.jpg',
+                    ),
+                )
+            self.cardboard_box = self.scene.add_entity(
+                gs.morphs.Box(
+                    pos=CARDBOARD_POS,
+                    size=cardbox_size,
+                    fixed=True,
+                    visualization=(not hide_cardbox),
                 ),
-            ) 
-        self.cardboard_box = self.scene.add_entity(
-            gs.morphs.Box(
-                pos=CARDBOARD_POS,
-                size=cardbox_size,
-                fixed=True,
-                visualization=(not hide_cardbox),
-            ),
-            surface=cardbox_surface,
-        ) 
+                surface=cardbox_surface,
+            )
         
         self.contact_markers = dict()
         for name, marker_cfg in contact_marker_cfgs.items():
