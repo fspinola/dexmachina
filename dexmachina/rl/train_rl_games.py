@@ -54,8 +54,18 @@ def main():
     # now add RL training args 
     parser.add_argument("--exp_name", "-exp", type=str, default="inspire", help="Experiment name.") 
     parser.add_argument("--horizon", '-ho', type=int, default=16, help="Number of steps per environment.")
-    parser.add_argument("--checkpoint", '-ck', type=str, default=None, help="Checkpoint file to load.")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=0.0003, help="Learning rate for the agent.") 
+    parser.add_argument("--checkpoint", '-ck', type=str, default=None, help="Checkpoint file to load (FULL-STATE resume: weights+optimizer+epoch counter).")
+    parser.add_argument("--warmstart_ckpt", type=str, default=None,
+        help="RL fine-tuning warm-start: load POLICY+VALUE WEIGHTS ONLY from this checkpoint "
+             "(fresh optimizer, epoch counter reset to 0, so LR/curriculum schedules start clean). "
+             "Mutually exclusive with --checkpoint. Requires matching obs/action dims.")
+    parser.add_argument("--warmstart_sigma", type=float, default=None,
+        help="If set, re-inflate the (fixed) policy log-sigma after warm-start to counter "
+             "exploration collapse of a converged policy. Value is log-std; e.g. -1.2 -> std~0.30.")
+    parser.add_argument("--entropy_coef", type=float, default=None,
+        help="Override PPO entropy_coef (config default 0.0). Small positive value (e.g. 0.003) "
+             "encourages the warm-started policy to keep exploring the new task.")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=0.0003, help="Learning rate for the agent.")
     parser.add_argument("--wandb_project", "-wp", type=str, default="dexmachina", help="WandB project name.")
     parser.add_argument("--save_freq", "-sf", type=int, default=1000)
     args = parser.parse_args()
@@ -105,6 +115,11 @@ def main():
     agent_cfg["params"]["config"]["full_experiment_name"] = exp_name
     agent_cfg["params"]["config"]["max_epochs"] = int(args.max_epochs)
     agent_cfg["params"]["config"]["save_frequency"] = int(args.save_freq)
+    if args.entropy_coef is not None:
+        agent_cfg["params"]["config"]["entropy_coef"] = float(args.entropy_coef)
+        print(f"[warmstart] entropy_coef -> {args.entropy_coef}")
+    assert not (args.checkpoint is not None and args.warmstart_ckpt is not None), \
+        "Use either --checkpoint (full-state resume) OR --warmstart_ckpt (weights-only), not both."
 
     rl_device = agent_cfg["params"]["config"]["device"]
     clip_obs = agent_cfg["params"]["env"].get("clip_observations", math.inf)
@@ -173,10 +188,33 @@ def main():
     # reset the agent and env
     runner.reset()
     # train the agent
-    runner_args = {"train": True, "play": False, "sigma": None}
-    if args.checkpoint is not None:
-        runner_args["checkpoint"] = os.path.abspath(args.checkpoint) 
-    runner.run(runner_args)
+    if args.warmstart_ckpt is not None:
+        # RL fine-tuning: weights-only warm-start. Replicate torch_runner.run_train but swap the
+        # full-state _restore for set_weights() so the optimizer + epoch/frame counters start fresh
+        # (clean LR & curriculum schedules), keeping only the pretrained policy+value weights.
+        from rl_games.algos_torch import torch_ext
+        ckpt_path = os.path.abspath(args.warmstart_ckpt)
+        assert os.path.exists(ckpt_path), f"warmstart_ckpt not found: {ckpt_path}"
+        agent = runner.algo_factory.create(runner.algo_name, base_name='run', params=runner.params)
+        weights = torch_ext.load_checkpoint(ckpt_path)
+        agent.set_weights(weights)  # loads model (policy+value) + stats only; no optimizer, epoch stays 0
+        print(f"[warmstart] WEIGHTS-ONLY load from {ckpt_path} "
+              f"(fresh optimizer, epoch_num={agent.epoch_num})")
+        if args.warmstart_sigma is not None:
+            net = agent.model.a2c_network
+            if getattr(net, 'fixed_sigma', False):
+                with torch.no_grad():
+                    net.sigma.fill_(float(args.warmstart_sigma))
+                print(f"[warmstart] reset fixed log-sigma -> {args.warmstart_sigma} "
+                      f"(std~{math.exp(float(args.warmstart_sigma)):.3f})")
+            else:
+                print("[warmstart] sigma not fixed; skipping sigma override")
+        agent.train()
+    else:
+        runner_args = {"train": True, "play": False, "sigma": None}
+        if args.checkpoint is not None:
+            runner_args["checkpoint"] = os.path.abspath(args.checkpoint)
+        runner.run(runner_args)
 
     # close the simulator
     exit()
