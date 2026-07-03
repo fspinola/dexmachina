@@ -309,11 +309,12 @@ class BaseEnv:
         _curr_gate_len = self.rsi_horizon if self.rsi_horizon > 0 else self.max_episode_length
         self.use_curriculum = False
         self.curriculum = None
-        if self.n_objects == 1 and self.object.actuated:
+        if self.objects and all(o.actuated for o in self.objects.values()):
+            # gain (Kp) curriculum for every actuated object: ARCTIC (1 object) and OakInk (2).
             self.use_curriculum = True
             self.curriculum = Curriculum(
                 self.curr_cfg,
-                task_object=self.object,
+                task_objects=list(self.objects.values()),
                 reward_keys=self.reward_keys,
                 num_envs=self.num_envs,
                 achieved_length=0,

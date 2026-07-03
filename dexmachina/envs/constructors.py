@@ -23,6 +23,44 @@ def parse_clip_string(clip):
     use_clip = vals[4].replace('u', '') # just 01/02
     return obj_name, start, end, subject, use_clip
 
+def build_gain_curriculum_cfg(args):
+    """Kp-gain curriculum cfg from CLI args, shared by the ARCTIC and OakInk actuated-object paths."""
+    assert len(args.upper_ratios) == len(args.lower_ratios) == 3, "Upper and lower ratios should have length 3"
+    ups, lows = list(args.upper_ratios), list(args.lower_ratios)
+    curr_rew_thres = list(args.curr_rew_thres)
+    assert len(curr_rew_thres) == 4, "Curriculum reward thresholds should have length 4"
+    zero_epoch = max(int(args.max_epochs - args.num_zero_epoch), 0)
+    return get_curriculum_cfg(dict(
+        kp_init=args.kp_init,
+        kv_init=args.kv_init,
+        force_range_init=args.force_range_init,
+        rew_thresholds=dict(task=curr_rew_thres[0], con=curr_rew_thres[1], imi=curr_rew_thres[2], bc=curr_rew_thres[3]),
+        wait_epochs=args.wait_epochs,
+        decay_rew=args.decay_rew,
+        schedule=args.curr_schedule,
+        fixed_mode=args.fixed_mode,
+        interval=args.interval,
+        first_ratio=args.first_ratio,
+        first_stop_iter=args.first_stop_iter,
+        second_stop_iter=args.second_stop_iter,
+        deque_freq=args.deque_freq,
+        grad_threshold=args.grad_threshold,
+        gain_mode=args.gain_mode,
+        uniform_mode=args.uniform_mode,
+        upper_ratios=dict(kp=ups[0], kv=ups[1], fr=ups[2]),
+        lower_ratios=dict(kp=lows[0], kv=lows[1], fr=lows[2]),
+        deque_len=args.deque_len,
+        decay_solimp=args.decay_solimp,
+        solip_multiplier=args.solip_multiplier,
+        resample_every_epoch=args.resample_every_epoch,
+        skip_grad=args.skip_grad,
+        zero_epoch=zero_epoch,
+        dialback_ep_len=args.dialback_ep_len,
+        dialback_min_epochs=args.dialback_min_epochs,
+        dialback_ratios=dict(kp=args.dialback_ratios[0], kv=args.dialback_ratios[1], fr=args.dialback_ratios[2]),
+    ))
+
+
 def _get_oakink_env_cfg(args, device, reward_cfg):
     """Assemble env_kwargs for an OakInk clip (task + imitation; contacts off).
 
@@ -48,6 +86,15 @@ def _get_oakink_env_cfg(args, device, reward_cfg):
             # convexify=True: OakInk colliders are (low-vert) convex hulls; force convex
             # treatment so Genesis does cheap convex-convex collision (not mesh-mesh).
             object_cfgs[name] = get_oakink_object_cfg(name=name, convexify=True, side=side)
+
+    # --actuate_object turns on the Kp curriculum (each rigid object is PD-driven toward its demo
+    # pose with a stiffness annealed high->0 over training -- the ARCTIC "assist then wean" scaffold).
+    if args.actuate_object:
+        for cfg in object_cfgs.values():
+            cfg['actuated'] = True
+            cfg['kp'] = args.kp_init
+            cfg['kv'] = args.kv_init
+            cfg['force_range'] = args.force_range_init
 
     env_cfg = get_env_cfg(use_visualizer=args.vis, show_viewer=args.vis, show_fps=args.show_fps)
     env_cfg['num_envs'] = args.num_envs
@@ -78,7 +125,10 @@ def _get_oakink_env_cfg(args, device, reward_cfg):
             robot_cfgs[side]['visualization'] = False
 
     rand_cfg = get_randomization_cfg(randomize=False)
-    curr_cfg = get_curriculum_cfg(dict())  # unused: objects are non-actuated -> use_curriculum stays False
+    # objects non-actuated -> use_curriculum stays False; with --actuate_object, build the real cfg
+    curr_cfg = build_gain_curriculum_cfg(args) if args.actuate_object else get_curriculum_cfg(dict())
+    if args.actuate_object:
+        env_cfg['scene_kwargs']['batch_dofs_info'] = True  # per-env gains for the uniform curriculum
 
     env_kwargs = {
         'env_cfg': env_cfg,
@@ -254,15 +304,6 @@ def get_all_env_cfg(args, device, load_retarget_data=True):
         reward_cfg['task_rew_weight'] = 0.0 
         object_cfgs = dict()
 
-    assert len(args.upper_ratios) == len(args.lower_ratios) == 3, "Upper and lower ratios should have length 3"
-    ups = list(args.upper_ratios)
-    lows = list(args.lower_ratios)
-    upper_ratios = dict(kp=ups[0], kv=ups[1], fr=ups[2])
-    lower_ratios = dict(kp=lows[0], kv=lows[1], fr=lows[2])
-    curr_rew_thres = list(args.curr_rew_thres)
-    assert len(curr_rew_thres) == 4, "Curriculum reward thresholds should have length 4"
-    zero_epoch = max(int(args.max_epochs - args.num_zero_epoch), 0)
-
     if args.maniptrans:
         assert not args.actuate_object, "Maniptrans curriculum only works with non-actuated objects"
         print("Using maniptrans curriculum")
@@ -275,48 +316,12 @@ def get_all_env_cfg(args, device, load_retarget_data=True):
             mode=args.maniptrans_mode,
             interval=args.interval,
             schedule=args.maniptrans_schedule,
-            zero_epoch=zero_epoch,
+            zero_epoch=max(int(args.max_epochs - args.num_zero_epoch), 0),
         )
         curr_cfg = get_maniptrans_cfg(maniptrans_kwargs)
     else:
-        curr_kwargs = dict(
-            kp_init=args.kp_init,
-            kv_init=args.kv_init,
-            force_range_init=args.force_range_init, 
-            rew_thresholds=dict(
-                task=curr_rew_thres[0],
-                con=curr_rew_thres[1],
-                imi=curr_rew_thres[2],
-                bc=curr_rew_thres[3],
-            ),
-            wait_epochs=args.wait_epochs,
-            decay_rew=args.decay_rew,
-            schedule=args.curr_schedule,
-            fixed_mode=args.fixed_mode,
-            interval=args.interval,
-            first_ratio=args.first_ratio,
-            first_stop_iter=args.first_stop_iter,
-            second_stop_iter=args.second_stop_iter,
-            
-            deque_freq=args.deque_freq,
-            grad_threshold=args.grad_threshold,
-            gain_mode=args.gain_mode,
+        curr_cfg = build_gain_curriculum_cfg(args)
 
-            uniform_mode=args.uniform_mode,
-            upper_ratios=upper_ratios,
-            lower_ratios=lower_ratios,
-            deque_len=args.deque_len,
-            decay_solimp=args.decay_solimp,
-            solip_multiplier=args.solip_multiplier,
-            resample_every_epoch=args.resample_every_epoch,
-            skip_grad=args.skip_grad,
-            zero_epoch=zero_epoch, # set this to last 
-            dialback_ep_len=args.dialback_ep_len,
-            dialback_min_epochs=args.dialback_min_epochs,
-            dialback_ratios=dict(kp=args.dialback_ratios[0], kv=args.dialback_ratios[1], fr=args.dialback_ratios[2]),
-        )
-        curr_cfg = get_curriculum_cfg(curr_kwargs)
-    
     env_kwargs = {
         'env_cfg': env_cfg,
         'robot_cfgs': robot_cfgs,

@@ -210,6 +210,9 @@ class ArticulatedObject:
 
         assert all([isinstance(joint.dof_idx_local, int) for joint in movable_joints]), "Only one dof per joint is supported"
         self.dof_idxs = [joint.dof_idx_local for joint in movable_joints]
+        # Controllable DOFs for object actuation = 6 free-base DOFs + one per movable joint
+        # (ARCTIC: 6+1=7; OakInk rigid free body: 6+0=6). Drives set_joint_gains / the Kp curriculum.
+        self.actuation_ndof = 6 + len(self.dof_idxs)
         self.actuated = self.cfg.get("actuated", False)
         
         self.entity = entity
@@ -326,8 +329,7 @@ class ArticulatedObject:
     def set_joint_gains(self, kp=None, kv=None, force_range=None, env_idxs=None):
         
         num_envs = self.num_envs if env_idxs is None else len(env_idxs)
-        dof_idxs = self.dof_idxs
-        dof_idxs = [i for i in range(7)]
+        dof_idxs = list(range(self.actuation_ndof))
         num_dofs = len(dof_idxs)
         if kp is not None:
             batched_kp = self.fill_gain_tensor(kp, num_dofs, num_envs, self.device) 
@@ -446,8 +448,8 @@ class ArticulatedObject:
             env_idxs = np.arange(self.num_envs)
         
         if self.actuated and reset_gains:
-            dof_idxs = [i for i in range(7)]
-            num_dofs = len(dof_idxs) 
+            dof_idxs = list(range(self.actuation_ndof))
+            num_dofs = len(dof_idxs)
             rand_scale = torch.rand((len(env_idxs), 1)) * 0.3 + 0.7 # range [0.5, 1.0]
             kp = torch.ones(len(env_idxs), num_dofs) * self.kp * rand_scale
             kp = kp.to(self.device)

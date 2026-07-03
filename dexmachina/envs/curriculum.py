@@ -52,10 +52,11 @@ def get_curriculum_cfg(kwargs=dict()):
 SCHEDULE_OPTIONS=["fixed", "exp", "uniform"] 
 
 class Curriculum:
-    def __init__(self, curr_cfg, task_object, reward_keys, num_envs, achieved_length, max_episode_length):
+    def __init__(self, curr_cfg, task_objects, reward_keys, num_envs, achieved_length, max_episode_length):
         self.curr_cfg = curr_cfg
         self.num_envs = num_envs
-        self.object = task_object
+        # One shared gain schedule drives every actuated object (ARCTIC: 1; OakInk: 2, one per hand).
+        self.objects = list(task_objects)
         self.init_gains = {
             "kp": curr_cfg['kp_init'],
             "kv": curr_cfg['kv_init'],
@@ -89,7 +90,7 @@ class Curriculum:
         assert self.fixed_mode in ['lin', 'exp', 'uniform'], "Invalid fixed mode"
         
         self.uniform_mode = curr_cfg['uniform_mode']
-        self.obj_ndof = 7 # base + articulation
+        self.obj_ndof = self.objects[0].actuation_ndof # base(6) + articulation (per object)
         assert self.uniform_mode in ['fast', 'slow'], "Invalid uniform mode"
         self.deque_appends = 0
         self.deque_append_freq = curr_cfg['deque_freq'] 
@@ -129,9 +130,10 @@ class Curriculum:
 
     def post_scene_build_setup(self):
         if self.decay_solimp:
-            new_params = torch.tensor([self.tconst_upper, 1.0, self.d0_lower, self.dmid_lower, 0.001, 0.5, 2.0]) 
-            self.object.entity._solver.set_geom_sol_params(new_params)
-        return 
+            new_params = torch.tensor([self.tconst_upper, 1.0, self.d0_lower, self.dmid_lower, 0.001, 0.5, 2.0])
+            # solver is shared across objects; set once
+            self.objects[0].entity._solver.set_geom_sol_params(new_params)
+        return
         
     def set_fixed_decay(self, epoch_num):
         """
@@ -328,13 +330,14 @@ class Curriculum:
             # same params for all 
             for key in self.decay_terms:
                 rand_gains[key] = self.curr_gains[key] 
-        # this should handle missing shapes:
-        self.object.set_joint_gains(
-            kp=rand_gains.get("kp", None),
-            kv=rand_gains.get("kv", None),
-            force_range=rand_gains.get("fr", None),
-            env_idxs=None,
-        )
+        # this should handle missing shapes; same schedule applied to every actuated object:
+        for obj in self.objects:
+            obj.set_joint_gains(
+                kp=rand_gains.get("kp", None),
+                kv=rand_gains.get("kv", None),
+                force_range=rand_gains.get("fr", None),
+                env_idxs=None,
+            )
     
     def reset_solimp(self): 
         self.tconst_upper = max(self.tconst_upper * self.solip_multiplier, 0.02)
@@ -343,9 +346,9 @@ class Curriculum:
             tconst = 0.02
         else:
             tconst = np.random.uniform(self.tconst_lower, self.tconst_upper)
-        new_params = torch.tensor([tconst,1.0, self.d0_lower, self.dmid_lower, 0.001, 0.5, 2.0]) 
-        self.object.entity._solver.set_geom_sol_params(new_params)
-        return 
+        new_params = torch.tensor([tconst,1.0, self.d0_lower, self.dmid_lower, 0.001, 0.5, 2.0])
+        self.objects[0].entity._solver.set_geom_sol_params(new_params)  # shared solver
+        return
 
     def get_reward_grads(self):
         return self.rew_grads
