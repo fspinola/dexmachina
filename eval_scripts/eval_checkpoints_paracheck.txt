@@ -1,0 +1,6 @@
+logs/rl_games/allegro_hand/allegro-paracheck_box30-230-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/allegro_hand.pth
+logs/rl_games/allegro_hand/allegro-paracheck_box30-230-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_1000_rew_173.31099.pth
+logs/rl_games/allegro_hand/allegro-paracheck_box30-230-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_2000_rew_170.14749.pth
+logs/rl_games/allegro_hand/allegro-paracheck_mixer30-200-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/allegro_hand.pth
+logs/rl_games/allegro_hand/allegro-paracheck_mixer30-200-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_1000_rew_137.17612.pth
+logs/rl_games/allegro_hand/allegro-paracheck_mixer30-200-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_2000_rew_138.43613.pth

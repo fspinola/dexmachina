@@ -9,11 +9,13 @@ logs/rl_games/allegro_hand/allegro-graphcon_ketchup30-130-s01-u01_B12000_hybrid_
 logs/rl_games/allegro_hand/allegro-graphcon_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_2000_rew_73.91812.pth
 logs/rl_games/allegro_hand/allegro-graphcon_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_3000_rew_70.13093.pth
 logs/rl_games/allegro_hand/allegro-graphcon_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_4000_rew_71.11045.pth
+logs/rl_games/allegro_hand/allegro-graphcon_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_5000_rew_74.57145.pth
 logs/rl_games/allegro_hand/allegro-graphcon_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/allegro_hand.pth
 logs/rl_games/allegro_hand/allegro-graphcon_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_1000_rew_212.4707.pth
 logs/rl_games/allegro_hand/allegro-graphcon_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_2000_rew_211.50555.pth
 logs/rl_games/allegro_hand/allegro-graphcon_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_3000_rew_214.10396.pth
 logs/rl_games/allegro_hand/allegro-graphcon_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_4000_rew_201.63776.pth
+logs/rl_games/allegro_hand/allegro-graphcon_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_5000_rew_205.28568.pth
 logs/rl_games/allegro_hand/allegro-graphcon_mixer30-200-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/allegro_hand.pth
 logs/rl_games/allegro_hand/allegro-graphcon_mixer30-200-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_1000_rew_138.85367.pth
 logs/rl_games/allegro_hand/allegro-graphcon_mixer30-200-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_allegro_hand_ep_2000_rew_136.4816.pth
@@ -37,6 +39,7 @@ logs/rl_games/inspire_hand/inspire-graphcon_ketchup30-130-s01-u01_B12000_hybrid_
 logs/rl_games/inspire_hand/inspire-graphcon_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_inspire_hand_ep_2000_rew_69.39331.pth
 logs/rl_games/inspire_hand/inspire-graphcon_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_inspire_hand_ep_3000_rew_67.98044.pth
 logs/rl_games/inspire_hand/inspire-graphcon_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_inspire_hand_ep_4000_rew_68.58969.pth
+logs/rl_games/inspire_hand/inspire-graphcon_ketchup30-130-s01-u01_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_inspire_hand_ep_5000_rew_69.80434.pth
 logs/rl_games/inspire_hand/inspire-graphcon_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/inspire_hand.pth
 logs/rl_games/inspire_hand/inspire-graphcon_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_inspire_hand_ep_1000_rew_211.86607.pth
 logs/rl_games/inspire_hand/inspire-graphcon_ketchup40-340-s01-u02_B12000_hybrid_thres0.6_ho16_imi0.3_con3.0_bc0.3/nn/last_inspire_hand_ep_2000_rew_209.63678.pth
