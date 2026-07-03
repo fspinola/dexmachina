@@ -38,7 +38,9 @@ CLIP="${CLIP:-e76b2at3-0-769}"   # cosmetic (exp-name only); actual frames come 
 CON="${CON:-0}"                  # contact reward weight (needs a .pt exported with --contacts); 0=off
 CK="${CK:-}"                     # checkpoint for full-state resume (weights+optimizer+epoch); empty=fresh
 CK_ARG=(); [ -n "$CK" ] && CK_ARG=(--checkpoint "$CK")
-echo "OAKINK CONTINUOUS: hand=$HAND envs=$ENVS pt=$PT exp=$EXP con=$CON resume=${CK:-none} (hybrid, NO RSI, h100-t3 20h)"
+ACT="${ACT:-0}"                  # 1 = actuate objects + Kp gain-curriculum (assist-then-wean)
+ACT_ARG=(); [ "$ACT" = "1" ] && ACT_ARG=(--actuate_object --kp_init 80 --kv_init 5 --num_zero_epoch 500)
+echo "OAKINK CONTINUOUS: hand=$HAND envs=$ENVS pt=$PT exp=$EXP con=$CON act=$ACT resume=${CK:-none} (hybrid, NO RSI, h100-t3 20h)"
 nvidia-smi || true
 
 # Defaults mirror train_array_continuous_t3 (imi 0.3, imw 0.5, bc 0.3, ert 0.6, hybrid_scales 0.1 1.0,
@@ -48,5 +50,5 @@ uv run --no-sync python dexmachina/rl/train_rl_games.py \
   --oakink --oakink_pt "$PT" --hand "$HAND" -B "$ENVS" --max_epochs "$MAX_EPOCHS" --horizon 16 \
   -am hybrid --hybrid_scales 0.1 1.0 \
   -imi 0.3 -imw 0.5 -bc 0.3 -con "$CON" --rand_init_ratio 0.0 -ert 0.6 --aux_reset_thres 0 0 0 \
-  "${CK_ARG[@]}" --clip "$CLIP" -exp "$EXP"
+  "${CK_ARG[@]}" "${ACT_ARG[@]}" --clip "$CLIP" -exp "$EXP"
 echo "=== EXIT $? ==="
