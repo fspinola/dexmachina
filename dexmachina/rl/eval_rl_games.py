@@ -129,7 +129,21 @@ def main():
     parser.add_argument('--output_render', '-or', action='store_true') # if not ture, don't show the retargeted reference
     parser.add_argument('--render_dir', '-out', type=str, default="rendered") # if not provided, save in the same folder as the checkpoint
     parser.add_argument('--video_fname', '-of', type=str, default="-eval.mp4") # if not provided, save in the same folder as the checkpoint
-    
+    parser.add_argument('--task_env', type=str, default=None,
+        help="Run dir / params/env.pkl / checkpoint whose saved env.pkl defines the TASK "
+             "(demo reference, object, episode length). Policy weights STILL come from "
+             "--checkpoint. Use for cross-clip transfer eval, e.g. run the -40 task with the "
+             "-30 policy. Requires the two runs share obs/action config (same object, hand, "
+             "action_mode, obs flags) so the -30 weights load into the -40 env.")
+    parser.add_argument('--out_tag', type=str, default=None,
+        help="Suffix for the eval output folder (default: a clip token parsed from --task_env, "
+             "e.g. 'on_mixer40-340'). Keeps the cross-eval separate from the normal eval.")
+    parser.add_argument('--cam_pos', type=float, nargs=3, default=None,
+        help="Override record-video camera position (x y z). Default is ARCTIC-framed; OakInk "
+             "scenes sit near z~1.0 so pass e.g. --cam_pos 0.5 -0.9 1.4.")
+    parser.add_argument('--cam_lookat', type=float, nargs=3, default=None,
+        help="Override record-video camera lookat (x y z). OakInk e.g. --cam_lookat -0.1 -0.1 1.0.")
+
     args = parser.parse_args()
     # Only override the saved action_mode when the user EXPLICITLY passes -am/--action_mode.
     # (The shared parser defaults action_mode to 'residual', which must not clobber the value
@@ -139,11 +153,31 @@ def main():
     ckpt_path = "/".join(args.checkpoint.split("/")[:-2])
     saved_cfg_fname = os.path.join(ckpt_path, "params", "env.pkl")
 
+    # --task_env: take the env kwargs (demo reference, object, episode length = the TASK) from a
+    # DIFFERENT run's env.pkl; policy weights still come from --checkpoint. Accepts a run dir, a
+    # params/env.pkl path, or any checkpoint inside the run (nn/*.pth).
+    task_token = None
+    if args.task_env is not None:
+        te = args.task_env.rstrip("/")
+        if te.endswith("env.pkl"):
+            task_run_dir = os.path.dirname(os.path.dirname(te))
+        elif te.endswith(".pth"):
+            task_run_dir = os.path.dirname(os.path.dirname(te))
+        else:
+            task_run_dir = te
+        saved_cfg_fname = os.path.join(task_run_dir, "params", "env.pkl")
+        m = re.search(r'_([a-zA-Z]+[0-9]+-[0-9]+)', os.path.basename(task_run_dir))
+        task_token = m.group(1) if m else "xtask"
+        print(f"[eval] TASK env from {saved_cfg_fname}; policy weights from {args.checkpoint}")
+
     ckpt_name = f"{args.checkpoint.split('/')[-1]}" # inpsire_ep1000 etc
     run_name = f"{args.checkpoint.split('/')[-3]}" # inpsire_ep1000 etc
     ckpt_data_folder = os.path.join(ckpt_path, ckpt_name.replace(".pth", "_eval"))
     if override_action_mode:
         ckpt_data_folder += f"_{args.action_mode}"  # e.g. *_eval_kinematic; keep policy eval intact
+    out_tag = args.out_tag if args.out_tag is not None else (f"on_{task_token}" if task_token else None)
+    if out_tag:
+        ckpt_data_folder += f"_{out_tag}"  # keep cross-task evals separate from the run's own eval
     os.makedirs(ckpt_data_folder, exist_ok=True)
 
     video_fname = join(ckpt_data_folder, f"video.mp4")
@@ -201,9 +235,9 @@ def main():
         env_kwargs['env_cfg']['camera_kwargs']['front'] = dict(
             res=(512, 512),
             fov=40,
-            pos=(0.5, -1.5, 1.2),
-            lookat=(0.0, -1.58, 2.0),
-        ) 
+            pos=tuple(args.cam_pos) if args.cam_pos is not None else (0.5, -1.5, 1.2),
+            lookat=tuple(args.cam_lookat) if args.cam_lookat is not None else (0.0, -1.58, 2.0),
+        )
     for name, cfg in env_kwargs['object_cfgs'].items():
         print("Setting eval time obj gains to 0.0")
         cfg['actuated'] = False
