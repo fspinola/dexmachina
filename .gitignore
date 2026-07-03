@@ -179,3 +179,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# local eval/diagnosis artifacts
+eval_videos/
+o2a_diagnosis/
