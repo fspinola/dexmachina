@@ -138,23 +138,26 @@ class ManipTransCurriculum:
         if final_gains:
             self.num_epoch_since_zero += 1
 
-        gains_decayed = False 
+        gains_decayed = False
         if epoch_num > self.zero_epoch:
             if not final_gains:
                 for key in self.decay_terms:
                     self.curr_gains[key] = self.final_gains[key]
                 reason += f"final gains reached: {self.final_gains} "
                 gains_decayed = True
+                # BUG FIX: fall through to the param-application block below instead of
+                # returning here -- the early return meant the sim kept the OLD gravity/
+                # friction forever (only the curriculum's bookkeeping was updated).
+            else:
+                return final_gains, gains_decayed, reason
+        elif final_gains or not learning_stablized:
             return final_gains, gains_decayed, reason
-        
-        if final_gains or not learning_stablized:
-            return final_gains, gains_decayed, reason
-        
-        # now decay the gains
-        if self.mode == "fixed":
-            gains_decayed, reason = self.set_fixed_decay(epoch_num) 
-        elif self.mode == "auto":
-            gains_decayed, reason = self.set_auto_decay(epoch_num)
+        else:
+            # now decay the gains
+            if self.mode == "fixed":
+                gains_decayed, reason = self.set_fixed_decay(epoch_num)
+            elif self.mode == "auto":
+                gains_decayed, reason = self.set_auto_decay(epoch_num)
         
         # now update the params
         if gains_decayed:

@@ -399,9 +399,23 @@ class Curriculum:
                 for key in self.decay_terms:
                     self.curr_gains[key] = 0.0
                     self.curr_gains_lower[key] = 0.0
-                reason += f"Epoch {epoch_num}: Gains set to zero"  
-                gains_decayed = True 
-            return zero_gains, gains_decayed, reason 
+                reason += f"Epoch {epoch_num}: Gains set to zero"
+                gains_decayed = True
+                # BUG FIX: actually push the zeros to the simulated object(s). This early-return
+                # path used to only zero the curriculum's BOOKKEEPING -- reset_object_gains() was
+                # never reached (it only ran in the normal-decay block below), so past zero_epoch
+                # the objects silently kept their last physical gains (e.g. kp=80 when no decay
+                # ever fired) and the policy kept training with phantom object help, then dropped
+                # the object at eval where gains are forced to 0.
+                print(f"Epoch {epoch_num}: zero_epoch hardstop: applying ZERO gains to object(s)")
+                self.reset_object_gains()
+                for key in self.rew_deques.keys():
+                    self.rew_deques[key].clear()
+                    self.rew_grads[key] = 1.0
+                self.ep_lens.clear()
+                self.deque_appends = 0
+                self.num_epoch_since_last_decay = 0
+            return zero_gains, gains_decayed, reason
         
         if zero_gains or not learning_stablized:
             return zero_gains, gains_decayed, reason 
