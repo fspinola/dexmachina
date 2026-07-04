@@ -41,8 +41,10 @@ CK_ARG=(); [ -n "$CK" ] && CK_ARG=(--checkpoint "$CK")
 ACT="${ACT:-0}"                  # 1 = actuate objects + Kp gain-curriculum (assist-then-wean)
 # Natural (uniform, reward-gated) decay matching ARCTIC rsi_const: --skip_grad bypasses the
 # reward-plateau gate, wait_epochs 100 + deque_len 30 let it evaluate early, uniform/slow mode.
+NUMZERO="${NUMZERO:-500}"        # epochs-before-end to force Kp->0 (zero_epoch = max_epochs-NUMZERO).
+                                 # MUST be < max_epochs or the hardstop zeroes gains at epoch 1.
 ACT_ARG=(); [ "$ACT" = "1" ] && ACT_ARG=(--actuate_object --kp_init 80 --kv_init 5 \
-  --skip_grad --uniform_mode slow --wait_epochs 100 --deque_len 30 --num_zero_epoch 500)
+  --skip_grad --uniform_mode slow --wait_epochs 100 --deque_len 30 --num_zero_epoch "$NUMZERO")
 RSI="${RSI:-0}"                  # 1 = RSI on (short-horizon random init; opens the curriculum's
                                  # achieved-length gate on the long 769-frame clip)
 RSI_ARG=(--rand_init_ratio 0.0)
