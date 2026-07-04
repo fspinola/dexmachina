@@ -90,7 +90,7 @@ class Curriculum:
         assert self.fixed_mode in ['lin', 'exp', 'uniform'], "Invalid fixed mode"
         
         self.uniform_mode = curr_cfg['uniform_mode']
-        self.obj_ndof = self.objects[0].actuation_ndof # base(6) + articulation (per object)
+        self.obj_ndof = self.objects[0].actuation_ndof # actuated DOFs: 6 free-base (+articulation if any)
         assert self.uniform_mode in ['fast', 'slow'], "Invalid uniform mode"
         self.deque_appends = 0
         self.deque_append_freq = curr_cfg['deque_freq'] 

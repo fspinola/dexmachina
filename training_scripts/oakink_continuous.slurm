@@ -39,7 +39,10 @@ CON="${CON:-0}"                  # contact reward weight (needs a .pt exported w
 CK="${CK:-}"                     # checkpoint for full-state resume (weights+optimizer+epoch); empty=fresh
 CK_ARG=(); [ -n "$CK" ] && CK_ARG=(--checkpoint "$CK")
 ACT="${ACT:-0}"                  # 1 = actuate objects + Kp gain-curriculum (assist-then-wean)
-ACT_ARG=(); [ "$ACT" = "1" ] && ACT_ARG=(--actuate_object --kp_init 80 --kv_init 5 --num_zero_epoch 500)
+# Natural (uniform, reward-gated) decay matching ARCTIC rsi_const: --skip_grad bypasses the
+# reward-plateau gate, wait_epochs 100 + deque_len 30 let it evaluate early, uniform/slow mode.
+ACT_ARG=(); [ "$ACT" = "1" ] && ACT_ARG=(--actuate_object --kp_init 80 --kv_init 5 \
+  --skip_grad --uniform_mode slow --wait_epochs 100 --deque_len 30 --num_zero_epoch 500)
 echo "OAKINK CONTINUOUS: hand=$HAND envs=$ENVS pt=$PT exp=$EXP con=$CON act=$ACT resume=${CK:-none} (hybrid, NO RSI, h100-t3 20h)"
 nvidia-smi || true
 
