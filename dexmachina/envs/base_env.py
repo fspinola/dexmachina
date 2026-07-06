@@ -232,6 +232,12 @@ class BaseEnv:
         self.rsi_horizon_start = int(env_cfg.get('rsi_horizon', -1))
         self.rsi_horizon_end = int(env_cfg.get('rsi_horizon_end', -1))
         self.rsi_anneal_epochs = int(env_cfg.get('rsi_anneal_epochs', 0))
+        # RSI is a TRAINING-ONLY curriculum. Eval rebuilds the env from the saved training config
+        # (which carries rsi_horizon) but forces rand_init_ratio=0 + is_eval=True for a full
+        # deterministic start-to-end rollout. Disable RSI here under is_eval so (a) the guard below
+        # doesn't fire on rand_init_ratio=0, and (b) _get_dones does NOT truncate eval at rsi_horizon.
+        if env_cfg.get('is_eval', False):
+            self.rsi_horizon_start = -1
         self.rsi_horizon = self.rsi_horizon_start  # current effective horizon (annealed per-epoch)
         if self.rsi_horizon_start > 0:
             assert self.chunk_ep_length <= 0, \
