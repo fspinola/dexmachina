@@ -20,17 +20,15 @@ The canonical actuated-dof order below was dumped from a live Genesis env
 (robot.actuated_dof_names); rl/verify_bc_obs.py re-checks it against the env.
 """
 
-import re
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 import numpy as np
 import torch
 
 from dexmachina.envs.demo_data import load_genesis_retarget_data
 from dexmachina.envs.math_utils import quat_conjugate, quat_mul
-from dexmachina.envs.robot import get_default_robot_cfg
+from dexmachina.envs.robot import get_default_robot_cfg, unscale
 
 # Genesis orders links breadth-first by kinematic-tree depth, so the 16 finger
 # joints interleave across the 4 fingers by level (NOT per-finger consecutive).
@@ -306,3 +304,167 @@ def clip_action_labels(
         recon_err_max=recon_err,
     )
     return labels, diag
+
+
+def _quat_rotvec(dq: torch.Tensor) -> torch.Tensor:
+    """Axis-angle vector of a wxyz quaternion increment (sign-canonicalized)."""
+    dq = dq * torch.sign(dq[:, 0:1] + torch.finfo(dq.dtype).eps)
+    xyz = dq[:, 1:]
+    norm = xyz.norm(dim=1, keepdim=True)
+    angle = 2.0 * torch.atan2(norm, dq[:, 0:1])
+    return torch.where(norm > 1e-8, xyz / norm.clamp_min(1e-12) * angle, torch.zeros_like(xyz))
+
+
+def _finite_difference(x: torch.Tensor, fps: float) -> torch.Tensor:
+    """Backward difference * fps; row 0 = 0 (matches the env's post-reset zeros)."""
+    vel = torch.zeros_like(x)
+    vel[1:] = (x[1:] - x[:-1]) * fps
+    return vel
+
+
+def build_clip_observations(
+    clip: ClipData,
+    labels: torch.Tensor,
+    hybrid_scales: tuple[float, float],
+    horizon: int,
+) -> torch.Tensor:
+    """Teacher-forced policy observations (T - horizon, obs_dim), no simulator.
+
+    Mirrors base_env.py::get_observations for the OakInk config (rl_games path,
+    observe_tip_dist == observe_contact_force == False) under the assumption
+    that the robot tracks the reference exactly and the objects track the demo:
+    at obs time t, dof_pos = ref[t], object state = demo[t], and curr_targets =
+    the target composed from the teacher action at t-1 (zeros-diff at t=0, the
+    env's reset state). Velocities are reference finite differences at the
+    60 Hz control rate (the env reads sim velocities; this is the documented
+    teacher-forcing approximation). Known 1-frame mismatch: the env's first obs
+    after a reset zeroes the object block (object.py::reset_idx); we emit
+    steady-state values instead.
+    """
+    n = clip.num_frames - horizon
+    T = clip.num_frames
+    blocks = []
+    for side in ("left", "right"):  # env robots dict insertion order
+        h = clip.hands[side]
+        ref = h.ref_qpos
+        # curr_targets(t) = composition of the teacher action taken at t-1
+        # anchored on ref[t-1]; at t=0 reset sets curr_targets = dof_pos.
+        dof_target_pos = torch.zeros((n, NDOF))
+        if n > 1:
+            off = 0 if side == "left" else NDOF
+            dof_target_pos[1:] = (
+                compose_hybrid_targets(
+                    labels[: n - 1, off:off + NDOF], ref[: n - 1], h.dof_limits, hybrid_scales
+                )
+                - ref[1:n]
+            )
+        blocks.extend([
+            dof_target_pos,
+            unscale(ref[:n], h.dof_limits[:, 0], h.dof_limits[:, 1]),
+            _finite_difference(ref, SIM_FPS)[:n] * 0.1,      # robot obs_scale['dof_vel']
+            h.kpt_pos[:n].reshape(n, -1),
+            h.wrist_pose[:n],
+        ])
+    for obj in clip.objects:
+        # The rigid-object articulation buffer stays 0 in the env (dof_idxs is
+        # empty), both in the dof_pos obs and inside state_diff's current state.
+        dof_buffer = torch.zeros((n, obj.arti.shape[1]))
+        goal_t = torch.clamp(torch.arange(n) + 1, max=T - 1)
+        demo_states = torch.cat([obj.pos, obj.quat, obj.arti], dim=1)
+        state_now = torch.cat([obj.pos[:n], obj.quat[:n], dof_buffer], dim=1)
+        ang_vel = torch.zeros((n, 3))
+        if n > 1:
+            dq = quat_mul(obj.quat[1:n], quat_conjugate(obj.quat[: n - 1]))
+            ang_vel[1:] = _quat_rotvec(dq) * SIM_FPS
+        blocks.extend([
+            obj.pos[:n],
+            obj.quat[:n],
+            dof_buffer,
+            demo_states[goal_t] - state_now,
+            ang_vel * 0.25,                                   # object obs_scale['root_ang_vel']
+            _finite_difference(obj.pos, SIM_FPS)[:n] * 2.0,   # object obs_scale['root_lin_vel']
+        ])
+    # normalized episode phase; buf holds the absolute demo frame and
+    # max_episode_length == clip length for OakInk (constructors.py).
+    blocks.append((2.0 * torch.arange(n, dtype=torch.float32) / T - 1.0)[:, None])
+
+    obs = torch.cat(blocks, dim=1)
+    _assert_finite("observations", obs, clip.path)
+    return torch.clamp(obs, -OBS_CLIP, OBS_CLIP)
+
+
+def expected_obs_dim(clip: ClipData) -> int:
+    n_kpts = next(iter(clip.hands.values())).kpt_pos.shape[1]
+    robot = 3 * NDOF + 3 * n_kpts + 7
+    obj = sum(7 + o.arti.shape[1] + 8 + 3 + 3 for o in clip.objects)
+    return 2 * robot + obj + 1
+
+
+@dataclass
+class BCArrays:
+    observations: torch.Tensor        # (N, obs_dim) float32
+    actions: torch.Tensor             # (N, 44) float32, [-1, 1]
+    clip_slices: dict[str, slice]     # clip path -> rows in the arrays
+    diagnostics: list[ClipDiagnostics]
+
+
+def build_bc_arrays(
+    pt_paths: list[str],
+    hybrid_scales: tuple[float, float],
+    horizon: int,
+    hand: str = "allegro_hand",
+) -> BCArrays:
+    """Load clips and stack (obs, action) pairs. All clips must share one obs layout."""
+    if not pt_paths:
+        raise ValueError("no clip paths given")
+    obs_list, act_list, diags, slices = [], [], [], {}
+    obs_dim = None
+    row = 0
+    for path in pt_paths:
+        clip = load_clip(path, hand=hand)
+        labels, diag = clip_action_labels(clip, hybrid_scales, horizon)
+        obs = build_clip_observations(clip, labels, hybrid_scales, horizon)
+        if obs_dim is None:
+            obs_dim = obs.shape[1]
+        elif obs.shape[1] != obs_dim:
+            raise ValueError(
+                f"{path}: obs dim {obs.shape[1]} != {obs_dim} of the first clip "
+                "(mixed shared-/two-object clips cannot share one policy)"
+            )
+        assert obs.shape[0] == labels.shape[0]
+        obs_list.append(obs)
+        act_list.append(labels)
+        diags.append(diag)
+        slices[path] = slice(row, row + obs.shape[0])
+        row += obs.shape[0]
+    return BCArrays(
+        observations=torch.cat(obs_list),
+        actions=torch.cat(act_list),
+        clip_slices=slices,
+        diagnostics=diags,
+    )
+
+
+def split_clips(pt_paths: list[str], num_val_clips: int, seed: int) -> tuple[list[str], list[str]]:
+    """Deterministic trajectory-level split: whole clips go to train or val."""
+    if num_val_clips >= len(pt_paths):
+        raise ValueError(f"num_val_clips={num_val_clips} >= {len(pt_paths)} clips")
+    order = np.random.default_rng(seed).permutation(len(pt_paths))
+    shuffled = [pt_paths[i] for i in order]
+    if num_val_clips == 0:
+        return shuffled, []
+    return shuffled[num_val_clips:], shuffled[:num_val_clips]
+
+
+class BCKinrefDataset(torch.utils.data.Dataset):
+    """Frame-level (obs, action) pairs over pre-built arrays."""
+
+    def __init__(self, arrays: BCArrays):
+        self.observations = arrays.observations
+        self.actions = arrays.actions
+
+    def __len__(self) -> int:
+        return self.observations.shape[0]
+
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
+        return {"obs": self.observations[idx], "action": self.actions[idx]}
