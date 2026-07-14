@@ -45,10 +45,10 @@ NUMZERO="${NUMZERO:-500}"        # epochs-before-end to force Kp->0 (zero_epoch 
                                  # MUST be < max_epochs or the hardstop zeroes gains at epoch 1.
 ACT_ARG=(); [ "$ACT" = "1" ] && ACT_ARG=(--actuate_object --kp_init 80 --kv_init 5 \
   --skip_grad --uniform_mode slow --wait_epochs 100 --deque_len 30 --num_zero_epoch "$NUMZERO")
-RSI="${RSI:-0}"                  # 1 = RSI on (short-horizon random init; opens the curriculum's
-                                 # achieved-length gate on the long 769-frame clip)
+RSI="${RSI:-0}"                  # 1 = RSI on (start-to-end reference-state init: random start
+                                 # frame, run to clip end; ManipTrans-style, no fixed-horizon cut)
 RSI_ARG=(--rand_init_ratio 0.0)
-[ "$RSI" = "1" ] && RSI_ARG=(--rand_init_ratio 1.0 --rsi_horizon 32)
+[ "$RSI" = "1" ] && RSI_ARG=(--rand_init_ratio 1.0)
 echo "OAKINK CONTINUOUS: hand=$HAND envs=$ENVS pt=$PT exp=$EXP con=$CON act=$ACT rsi=$RSI resume=${CK:-none} (hybrid, h100-t3 20h)"
 nvidia-smi || true
 

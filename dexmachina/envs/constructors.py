@@ -107,9 +107,6 @@ def _get_oakink_env_cfg(args, device, reward_cfg):
     env_cfg['use_rl_games'] = args.use_rl_games
     env_cfg['rand_init_ratio'] = args.rand_init_ratio
     env_cfg['chunk_ep_length'] = args.chunk_ep_length
-    env_cfg['rsi_horizon'] = args.rsi_horizon
-    env_cfg['rsi_horizon_end'] = args.rsi_horizon_end
-    env_cfg['rsi_anneal_epochs'] = args.rsi_anneal_epochs
     # keep reward_cfg['contact_rew_weight'] = args.contact_rew_weight (set earlier); do not zero
 
     robot_cfgs = {
@@ -241,9 +238,6 @@ def get_all_env_cfg(args, device, load_retarget_data=True):
     env_cfg['use_rl_games'] = args.use_rl_games
     env_cfg['rand_init_ratio'] = args.rand_init_ratio
     env_cfg['chunk_ep_length'] = args.chunk_ep_length
-    env_cfg['rsi_horizon'] = args.rsi_horizon
-    env_cfg['rsi_horizon_end'] = args.rsi_horizon_end
-    env_cfg['rsi_anneal_epochs'] = args.rsi_anneal_epochs
 
     if args.record_interval > 0 or args.record_video:
         env_cfg["record_video"] = True
@@ -414,15 +408,6 @@ def get_common_argparser():
     parser.add_argument('--is_eval', '-eval', action='store_true')
     parser.add_argument('--rand_init_ratio', '-randr', type=float, default=0.0)
     parser.add_argument('--chunk_ep_length', '-chunk', type=int, default=-1)
-    # ManipTrans-style fixed-horizon RSI: random reference start + fixed-length truncation.
-    parser.add_argument('--rsi_horizon', '-rsih', type=int, default=-1,
-        help="Fixed-horizon RSI window in steps: if >0, RSI episodes truncate this many steps after "
-             "the (uniform-random) start, or at the demo end. Requires --rand_init_ratio > 0.")
-    parser.add_argument('--rsi_horizon_end', '-rsihe', type=int, default=-1,
-        help="If >0, linearly anneal the RSI horizon from --rsi_horizon up to this (capped at clip "
-             "length) over --rsi_anneal_epochs (short windows early -> full rollouts late).")
-    parser.add_argument('--rsi_anneal_epochs', '-rsiae', type=int, default=0,
-        help="Epochs over which to anneal the RSI horizon from --rsi_horizon to --rsi_horizon_end.")
     
     parser.add_argument('--use_rand', '-rand', action='store_true')
     parser.add_argument('--rand_friction', '-rf', action='store_true')
