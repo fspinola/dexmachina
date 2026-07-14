@@ -49,6 +49,9 @@ RSI="${RSI:-0}"                  # 1 = RSI on (start-to-end reference-state init
                                  # frame, run to clip end; ManipTrans-style, no fixed-horizon cut)
 RSI_ARG=(--rand_init_ratio 0.0)
 [ "$RSI" = "1" ] && RSI_ARG=(--rand_init_ratio 1.0)
+HORIZON="${HORIZON:-32}"         # PPO rollout length; 32 matches ManipTrans exactly
+GCOL="${GCOL:-1}"                # 1 = --group_collisions (intra-hand finger self-collision, as ARCTIC)
+GCOL_ARG=(); [ "$GCOL" = "1" ] && GCOL_ARG=(--group_collisions)
 echo "OAKINK CONTINUOUS: hand=$HAND envs=$ENVS pt=$PT exp=$EXP con=$CON act=$ACT rsi=$RSI resume=${CK:-none} (hybrid, h100-t3 20h)"
 nvidia-smi || true
 
@@ -56,8 +59,8 @@ nvidia-smi || true
 # horizon 16) MINUS object actuation/curriculum (objects are rigid) and MINUS -con/-obt/-obf
 # (contacts + tip-dist obs off for OakInk). rand_init_ratio 0 = no RSI.
 uv run --no-sync python dexmachina/rl/train_rl_games.py \
-  --oakink --oakink_pt "$PT" --hand "$HAND" -B "$ENVS" --max_epochs "$MAX_EPOCHS" --horizon 16 \
+  --oakink --oakink_pt "$PT" --hand "$HAND" -B "$ENVS" --max_epochs "$MAX_EPOCHS" --horizon "$HORIZON" \
   -am hybrid --hybrid_scales 0.1 1.0 \
   -imi 0.3 -imw 0.5 -bc 0.3 -con "$CON" "${RSI_ARG[@]}" -ert 0.6 --aux_reset_thres 0 0 0 \
-  "${CK_ARG[@]}" "${ACT_ARG[@]}" --clip "$CLIP" -exp "$EXP"
+  "${CK_ARG[@]}" "${ACT_ARG[@]}" "${GCOL_ARG[@]}" --clip "$CLIP" -exp "$EXP"
 echo "=== EXIT $? ==="
