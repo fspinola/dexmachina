@@ -989,10 +989,12 @@ class BaseEnv:
     def get_privileged_observations(self): 
         return None
 
-    def normalize_episode_rew(self, rewards: torch.Tensor):
-        # `rewards` is the SUMMED per-episode reward; divide by the episode length to get the per-step
-        # average that the curriculum's reward gate expects.
-        avg_rew = rewards / self.max_episode_length
+    def normalize_episode_rew(self, rewards: torch.Tensor, lengths: torch.Tensor):
+        # `rewards` is the SUMMED per-episode reward; divide by the ACTUAL steps each episode ran
+        # (not the full clip length) to get the per-step average the curriculum's reward gate expects.
+        # Under start-to-end RSI episodes begin mid-clip and run a variable number of steps, so
+        # dividing by max_episode_length under-reports the per-step reward by ~2x and stalls the gate.
+        avg_rew = rewards / lengths.clamp(min=1).float()
         return avg_rew.mean().item()
 
     def reset_idx(self, env_idxs=[]):
@@ -1010,15 +1012,18 @@ class BaseEnv:
         self.max_achieved_length = int(self.max_achieved_length * 0.5 + progressed_avg * 0.5)
 
         if self.use_curriculum:
+            # steps actually run this episode (end frame - start frame); == episode_length_buf when
+            # not RSI/chunked (start==0). Per-step normalization denominator.
+            steps_run = self.episode_length_buf[env_idxs] - self.episode_start_buf[env_idxs]
             episode_rewards = dict()
             if 'task' in self.reward_keys:
-                episode_rewards['task'] = self.normalize_episode_rew(self.cumulative_task_rew[env_idxs])
+                episode_rewards['task'] = self.normalize_episode_rew(self.cumulative_task_rew[env_idxs], steps_run)
             if 'con' in self.reward_keys:
-                episode_rewards['con'] = self.normalize_episode_rew(self.cumulative_con_rew[env_idxs])
+                episode_rewards['con'] = self.normalize_episode_rew(self.cumulative_con_rew[env_idxs], steps_run)
             if 'imi' in self.reward_keys:
-                episode_rewards['imi'] = self.normalize_episode_rew(self.cumulative_imi_rew[env_idxs])
+                episode_rewards['imi'] = self.normalize_episode_rew(self.cumulative_imi_rew[env_idxs], steps_run)
             if 'bc' in self.reward_keys:
-                episode_rewards['bc'] = self.normalize_episode_rew(self.cumulative_bc_rew[env_idxs])
+                episode_rewards['bc'] = self.normalize_episode_rew(self.cumulative_bc_rew[env_idxs], steps_run)
             self.curriculum.update_progress(episode_rewards, self.max_achieved_length)
 
         if self.chunk_ep_length > 0:
