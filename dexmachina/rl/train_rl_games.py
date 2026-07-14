@@ -197,9 +197,34 @@ def main():
         assert os.path.exists(ckpt_path), f"warmstart_ckpt not found: {ckpt_path}"
         agent = runner.algo_factory.create(runner.algo_name, base_name='run', params=runner.params)
         weights = torch_ext.load_checkpoint(ckpt_path)
-        agent.set_weights(weights)  # loads model (policy+value) + stats only; no optimizer, epoch stays 0
+        bc_meta = weights.get('bc_metadata') if isinstance(weights, dict) else None
+        if bc_meta is not None:
+            # Checkpoint from dexmachina/rl/train_bc_kinref.py: actor cloned from kinematic
+            # references; value head + value_mean_std are at fresh-init values (critic NOT trained).
+            print(f"[warmstart] BC checkpoint: label_horizon={bc_meta.get('label_horizon')} "
+                  f"hybrid_scales={bc_meta.get('hybrid_scales')} obs_dim={bc_meta.get('obs_dim')} "
+                  f"action_dim={bc_meta.get('action_dim')} commit={str(bc_meta.get('git_commit'))[:9]}")
+            if bc_meta.get('hybrid_scales') is not None and list(args.hybrid_scales) != list(bc_meta['hybrid_scales']):
+                print(f"[warmstart] *** WARNING: RL --hybrid_scales {list(args.hybrid_scales)} != "
+                      f"BC {bc_meta['hybrid_scales']}; the cloned actions assume the BC scales ***")
+        try:
+            agent.set_weights(weights)  # loads model (policy+value) + stats only; no optimizer, epoch stays 0
+        except RuntimeError:
+            agent_sd = agent.model.state_dict()
+            ckpt_sd = weights['model']
+            missing = sorted(set(agent_sd) - set(ckpt_sd))
+            unexpected = sorted(set(ckpt_sd) - set(agent_sd))
+            mismatched = sorted(k for k in set(agent_sd) & set(ckpt_sd)
+                                if tuple(agent_sd[k].shape) != tuple(ckpt_sd[k].shape))
+            print(f"[warmstart] LOAD FAILED: missing keys {missing or 'none'}; "
+                  f"unexpected keys {unexpected or 'none'}")
+            for k in mismatched:
+                print(f"[warmstart]   shape mismatch {k}: agent {tuple(agent_sd[k].shape)} "
+                      f"vs checkpoint {tuple(ckpt_sd[k].shape)} "
+                      "(obs/action dims must match the BC data: same clip layout, same hand)")
+            raise
         print(f"[warmstart] WEIGHTS-ONLY load from {ckpt_path} "
-              f"(fresh optimizer, epoch_num={agent.epoch_num})")
+              f"({len(weights['model'])} keys loaded, fresh optimizer, epoch_num={agent.epoch_num})")
         if args.warmstart_sigma is not None:
             net = agent.model.a2c_network
             if getattr(net, 'fixed_sigma', False):
