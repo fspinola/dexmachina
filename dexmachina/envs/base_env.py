@@ -141,9 +141,6 @@ def get_env_cfg(
         "env_spacing": ENV_SPACING,
         "n_envs_per_row": None, # this will default to grid layout 
         "chunk_ep_length": -1,#chunk the episode length
-        "rsi_horizon": -1,        # ManipTrans-style fixed-horizon RSI window (steps); <=0 disables
-        "rsi_horizon_end": -1,    # anneal target horizon (steps, capped at clip len); <=0 = no anneal
-        "rsi_anneal_epochs": 0,   # epochs over which to anneal rsi_horizon -> rsi_horizon_end
         "plane_urdf_path": 'urdf/plane/plane.urdf',
         'camera_kwargs': camera_kwargs,
         'render_camera': 'front',  
@@ -222,39 +219,11 @@ class BaseEnv:
         if self.chunk_ep_length <= 0:
             assert self.max_episode_length >= self.demo_length, f"Episode length {self.max_episode_length} != demo length {self.reward_module.demo_length}"
 
-        # ManipTrans-style fixed-horizon RSI (see reset_idx / _get_dones): random reference start +
-        # fixed-length truncation. Episodes run `rsi_horizon` steps from a uniform-random start over
-        # the whole clip, then truncate (bootstrapped by the value_bootstrap fix below). Optionally
-        # anneal the horizon up toward the full clip so late training also covers full start-to-end
-        # rollouts. epoch_num is refreshed each epoch by set_curriculum(); init here because reset_idx
-        # runs (initial reset) before the first epoch.
-        self.epoch_num = 0
-        self.rsi_horizon_start = int(env_cfg.get('rsi_horizon', -1))
-        self.rsi_horizon_end = int(env_cfg.get('rsi_horizon_end', -1))
-        self.rsi_anneal_epochs = int(env_cfg.get('rsi_anneal_epochs', 0))
-        # RSI is a TRAINING-ONLY curriculum. Eval rebuilds the env from the saved training config
-        # (which carries rsi_horizon) but forces rand_init_ratio=0 + is_eval=True for a full
-        # deterministic start-to-end rollout. Disable RSI here under is_eval so (a) the guard below
-        # doesn't fire on rand_init_ratio=0, and (b) _get_dones does NOT truncate eval at rsi_horizon.
-        if env_cfg.get('is_eval', False):
-            self.rsi_horizon_start = -1
-        self.rsi_horizon = self.rsi_horizon_start  # current effective horizon (annealed per-epoch)
-        if self.rsi_horizon_start > 0:
-            assert self.chunk_ep_length <= 0, \
-                "rsi_horizon (fixed-horizon RSI) and chunk_ep_length are both fixed-length truncation schemes; enable only one."
-            assert env_cfg.get('rand_init_ratio', 0.0) > 0.0, \
-                "rsi_horizon (fixed-horizon RSI) needs rand_init_ratio > 0 to sample random starts."
-            _anneal = self.rsi_horizon_end > 0 and self.rsi_anneal_epochs > 0
-            print(f"Fixed-horizon RSI: horizon={self.rsi_horizon_start}"
-                  + (f" -> min({self.rsi_horizon_end}, demo={self.demo_length}) over {self.rsi_anneal_epochs} epochs"
-                     if _anneal else " (constant)"))
-
         # Set False so the rl_games wrapper populates extras["time_outs"] and PPO value_bootstrap
         # (enabled in the ppo cfg) adds gamma*V(s) for TIME-LIMIT truncations instead of treating
-        # them as zero-value terminals. _get_dones() below returns a bootstrap mask that fires ONLY
-        # for artificial cuts (chunk / fixed-horizon RSI) while the reference motion is still ongoing,
-        # so for the current start-to-end config (episode ends exactly at the demo end) this is a
-        # semantic no-op; it becomes load-bearing once fixed-horizon RSI truncates mid-clip.
+        # them as zero-value terminals. _get_dones() returns a bootstrap mask that fires ONLY for
+        # artificial time-limit cuts (chunking) while the reference motion is still ongoing; for the
+        # normal start-to-end config (episode ends exactly at the demo end) this is a semantic no-op.
         self.is_finite_horizon = False # partial-episode bootstrapping for time-limit truncations
         
         self.table_height = TABLE_HEIGHT
@@ -308,11 +277,7 @@ class BaseEnv:
             self.object = self.objects[self.object_names[0]] # only support one object for now
         self.n_objects = len(self.object_names) # might be 0!!
        
-        # Under fixed-horizon RSI, episodes are ~rsi_horizon steps (not the full clip), so the
-        # curriculum's decay gate (achieved_len >= max_episode_length-2) must reference the HORIZON,
-        # not the clip length -- else the gate never opens and the object gains never decay. reward
-        # normalization is fixed the same way in normalize_episode_rew().
-        _curr_gate_len = self.rsi_horizon if self.rsi_horizon > 0 else self.max_episode_length
+        _curr_gate_len = self.max_episode_length
         self.use_curriculum = False
         self.curriculum = None
         if self.objects and all(o.actuated for o in self.objects.values()):
@@ -838,11 +803,6 @@ class BaseEnv:
         stepped_length = self.episode_length_buf - self.episode_start_buf
         if self.chunk_ep_length > 0:
             timeout = stepped_length >= self.chunk_ep_length
-        elif self.rsi_horizon > 0:
-            # ManipTrans fixed-horizon RSI: truncate `rsi_horizon` steps after the (random) start,
-            # or at the demo end, whichever comes first. Mid-clip truncations are value-bootstrapped
-            # (episode_length_buf < demo_length -> time_outs mask below fires); demo-end stays terminal.
-            timeout = (stepped_length >= self.rsi_horizon) | (self.episode_length_buf >= self.max_episode_length)
         else:
             timeout = self.episode_length_buf >= self.max_episode_length  # returns true for end of episode
 
@@ -1031,23 +991,18 @@ class BaseEnv:
 
     def normalize_episode_rew(self, rewards: torch.Tensor):
         # `rewards` is the SUMMED per-episode reward; divide by the episode length to get the per-step
-        # average that the curriculum's reward gate expects. Under fixed-horizon RSI episodes are
-        # ~rsi_horizon steps (not the full clip), so dividing by max_episode_length would deflate the
-        # signal by ~clip/horizon and the reward gate would never open -> object gains never decay.
-        denom = self.rsi_horizon if self.rsi_horizon > 0 else self.max_episode_length
-        avg_rew = rewards / denom
+        # average that the curriculum's reward gate expects.
+        avg_rew = rewards / self.max_episode_length
         return avg_rew.mean().item()
 
     def reset_idx(self, env_idxs=[]):
         if len(env_idxs) == 0:
             return  
         self.randomization.on_reset_idx(env_idxs)
-        # Curriculum achieved-length metric. For FIXED-LENGTH windows (chunk OR fixed-horizon RSI)
-        # measure STEPS SURVIVED this window, not the absolute demo frame reached -- paired with the
-        # horizon-based gate (see curriculum construction), achieved -> rsi_horizon once the policy
-        # survives its window, so the object-gain decay can trigger. For plain start-to-end (no RSI,
-        # no chunk) keep the final-frame-reached metric (== steps-from-0 there anyway).
-        if self.chunk_ep_length > 0 or self.rsi_horizon > 0:
+        # Curriculum achieved-length metric. For chunked training measure STEPS SURVIVED this chunk;
+        # otherwise (incl. start-to-end RSI) use the final demo frame reached (== steps-from-0 when
+        # not chunked).
+        if self.chunk_ep_length > 0:
             progressed = self.episode_length_buf[env_idxs] - self.episode_start_buf[env_idxs]
         else:
             progressed = self.episode_length_buf[env_idxs]
@@ -1074,18 +1029,12 @@ class BaseEnv:
             self.episode_start_buf[env_idxs] = 0 
         
         if self.rand_init_ratio > 0.0:
-            # RSI: `torand` picks which resetting envs get a random (non-zero) reference start.
+            # RSI (start-to-end): `torand` picks which resetting envs get a random reference start;
+            # the episode then runs from that start to the demo end (early-terminating on failure).
+            # Cap the start at how far the policy has actually reached, so it never resets into
+            # unseen late phases.
             torand = torch.rand(len(env_idxs), device=self.device) <= self.rand_init_ratio
-            if self.rsi_horizon > 0:
-                # ManipTrans-style fixed-horizon RSI: sample the start uniformly in [0, demo-horizon)
-                # so EVERY window runs a full `rsi_horizon` steps (start+horizon <= demo). Uniform
-                # full windows cover all phases from epoch 0 AND make the achieved-length gate
-                # reachable (steps-survived -> horizon). If horizon >= demo it degenerates to start 0.
-                end_t = max(1, int(self.demo_length) - self.rsi_horizon)
-            else:
-                # legacy progress-gated RSI (start-to-end episodes): cap the start at how far the
-                # policy has actually reached, so it never resets into unseen late phases.
-                end_t = max(1, min(self.max_achieved_length + 1, self.max_episode_length - 1))
+            end_t = max(1, min(self.max_achieved_length + 1, self.max_episode_length - 1))
             rand_t = torch.randint(0, end_t, (len(env_idxs),), dtype=torch.int32, device=self.device)
             ep_starts = torch.zeros(len(env_idxs), dtype=torch.int32, device=self.device)
             ep_starts[torand] = rand_t[torand]
@@ -1263,23 +1212,8 @@ class BaseEnv:
             mass_range = self.rand_cfg['mass']
             self._randomize_mass(mass_range=mass_range, env_idxs=env_idxs)
 
-    def _update_rsi_horizon(self):
-        # Linearly anneal the fixed-horizon RSI window from rsi_horizon_start toward
-        # min(rsi_horizon_end, demo_length) over rsi_anneal_epochs, so training begins with short
-        # windows (uniform phase coverage, low-variance credit assignment) and grows toward full
-        # start-to-end rollouts (so the deployed policy handles error accumulation over the whole clip).
-        if self.rsi_horizon_start <= 0:
-            return
-        if self.rsi_horizon_end <= 0 or self.rsi_anneal_epochs <= 0:
-            self.rsi_horizon = self.rsi_horizon_start
-            return
-        target = min(self.rsi_horizon_end, int(self.demo_length))
-        frac = min(1.0, max(0.0, self.epoch_num / float(self.rsi_anneal_epochs)))
-        self.rsi_horizon = int(round(self.rsi_horizon_start + frac * (target - self.rsi_horizon_start)))
-
     def set_curriculum(self, epoch_num):
         self.epoch_num = epoch_num
-        self._update_rsi_horizon()
         verbose = epoch_num % 250 == 0
         reset_reward_tracker = False
         if self.use_curriculum:
