@@ -55,6 +55,9 @@ RSI_ARG=(--rand_init_ratio 0.0)
 HORIZON="${HORIZON:-32}"         # PPO rollout length; 32 matches ManipTrans exactly
 GCOL="${GCOL:-1}"                # 1 = --group_collisions (intra-hand finger self-collision, as ARCTIC)
 GCOL_ARG=(); [ "$GCOL" = "1" ] && GCOL_ARG=(--group_collisions)
+UNCAP="${UNCAP:-0}"              # 1 = --uncapped_rsi (RSI start uniform over whole clip, ManipTrans)
+UNCAP_ARG=(); [ "$UNCAP" = "1" ] && UNCAP_ARG=(--uncapped_rsi)
+GATEFRAC="${GATEFRAC:-1.0}"      # curriculum wean gate: reach GATEFRAC*clip (1.0=full; 0.9 helps long)
 echo "OAKINK CONTINUOUS: hand=$HAND envs=$ENVS pt=$PT exp=$EXP con=$CON act=$ACT rsi=$RSI resume=${CK:-none} (hybrid, h100-t3 20h)"
 nvidia-smi || true
 
@@ -65,5 +68,6 @@ uv run --no-sync python dexmachina/rl/train_rl_games.py \
   --oakink --oakink_pt "$PT" --hand "$HAND" -B "$ENVS" --max_epochs "$MAX_EPOCHS" --horizon "$HORIZON" \
   -am hybrid --hybrid_scales 0.1 1.0 \
   -imi 0.3 -imw 0.5 -bc 0.3 -con "$CON" "${RSI_ARG[@]}" -ert 0.6 --aux_reset_thres 0 0 0 \
+  "${UNCAP_ARG[@]}" --achieved_len_frac "$GATEFRAC" \
   "${CK_ARG[@]}" "${ACT_ARG[@]}" "${GCOL_ARG[@]}" --clip "$CLIP" -exp "$EXP"
 echo "=== EXIT $? ==="

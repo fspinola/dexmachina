@@ -137,7 +137,8 @@ def get_env_cfg(
         "use_contact_reward": False,
         'use_rl_games': True,
         "is_eval": False, 
-        "rand_init_ratio": 0.0, # randomize initial states  
+        "rand_init_ratio": 0.0, # randomize initial states
+        "uncapped_rsi": False,  # RSI start uniform over whole clip (vs capped at reachable frontier)
         "env_spacing": ENV_SPACING,
         "n_envs_per_row": None, # this will default to grid layout 
         "chunk_ep_length": -1,#chunk the episode length
@@ -430,7 +431,8 @@ class BaseEnv:
         self.num_obs = self.obs_dim
         self.num_privileged_obs = None
         self.num_actions = self.action_dim # need for rsl
-        self.rand_init_ratio = env_cfg.get('rand_init_ratio', 0.0) 
+        self.rand_init_ratio = env_cfg.get('rand_init_ratio', 0.0)
+        self.uncapped_rsi = env_cfg.get('uncapped_rsi', False)  # RSI start uniform over whole clip
         self.initialize_value_buffers()
         
         # # NOTE! seems like scene must be built first
@@ -1003,12 +1005,19 @@ class BaseEnv:
         self.randomization.on_reset_idx(env_idxs)
         # Curriculum achieved-length metric. For chunked training measure STEPS SURVIVED this chunk;
         # otherwise (incl. start-to-end RSI) use the final demo frame reached (== steps-from-0 when
-        # not chunked).
-        if self.chunk_ep_length > 0:
-            progressed = self.episode_length_buf[env_idxs] - self.episode_start_buf[env_idxs]
+        # not chunked). Under UNCAPPED RSI the final-frame EMA is inflated by trivial late starts, so
+        # use a start-invariant, length-weighted COMPLETION ratio (survived/intended steps) scaled to
+        # frame units, so the same gate (frac*clip) reads as "fraction of the clip actually completed".
+        if self.uncapped_rsi:
+            survived = (self.episode_length_buf[env_idxs] - self.episode_start_buf[env_idxs]).float()
+            intended = (self.max_episode_length - self.episode_start_buf[env_idxs]).clamp(min=1).float()
+            progressed_avg = (survived.sum() / intended.sum()).item() * self.max_episode_length
         else:
-            progressed = self.episode_length_buf[env_idxs]
-        progressed_avg = torch.mean(progressed.float()).item()
+            if self.chunk_ep_length > 0:
+                progressed = self.episode_length_buf[env_idxs] - self.episode_start_buf[env_idxs]
+            else:
+                progressed = self.episode_length_buf[env_idxs]
+            progressed_avg = torch.mean(progressed.float()).item()
         self.max_achieved_length = int(self.max_achieved_length * 0.5 + progressed_avg * 0.5)
 
         if self.use_curriculum:
@@ -1039,7 +1048,12 @@ class BaseEnv:
             # Cap the start at how far the policy has actually reached, so it never resets into
             # unseen late phases.
             torand = torch.rand(len(env_idxs), device=self.device) <= self.rand_init_ratio
-            end_t = max(1, min(self.max_achieved_length + 1, self.max_episode_length - 1))
+            # uncapped: sample the reference start uniformly over the whole clip (ManipTrans/DeepMimic);
+            # capped (default): cap at the reachable frontier so we never reset into unseen late phases.
+            if self.uncapped_rsi:
+                end_t = self.max_episode_length - 1
+            else:
+                end_t = max(1, min(self.max_achieved_length + 1, self.max_episode_length - 1))
             rand_t = torch.randint(0, end_t, (len(env_idxs),), dtype=torch.int32, device=self.device)
             ep_starts = torch.zeros(len(env_idxs), dtype=torch.int32, device=self.device)
             ep_starts[torand] = rand_t[torand]

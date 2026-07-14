@@ -40,6 +40,7 @@ def get_curriculum_cfg(kwargs=dict()):
         "rew_thresholds": dict(task=0.5, con=0.05, imi=0.05, bc=0.05),
         "resample_every_epoch": -1, # if true and using uniform, re-sample gains every epoch
         "skip_grad": False, # if true, skip gradient check
+        "achieved_len_frac": 1.0, # wean gate: reach frac*clip (default full: clip-2)
         "zero_epoch": 30000, # set all zeros once beyond this hardstop
         "dialback_ep_len": 50,
         "dialback_min_epochs": 500,
@@ -127,6 +128,9 @@ class Curriculum:
         torch.manual_seed(self.seed)
         self.skip_grad = curr_cfg['skip_grad']
         self.zero_epoch = curr_cfg.get('zero_epoch', 50000)
+        # achieved-length gate: wean once episodes reach frac*clip (default ~full: clip-2). Lower it
+        # (e.g. 0.9) so long clips can start weaning before mastering the very last frames.
+        self.achieved_len_frac = curr_cfg.get('achieved_len_frac', 1.0)
 
     def post_scene_build_setup(self):
         if self.decay_solimp:
@@ -218,8 +222,9 @@ class Curriculum:
             reduce_gains = False
         else:
             achieved_len = np.mean(self.ep_lens)
-            if achieved_len < self.max_episode_length - 2:
-                reason += f"max achieved length: {achieved_len} too low"
+            gate = self.achieved_len_frac * self.max_episode_length if self.achieved_len_frac < 1.0 else self.max_episode_length - 2
+            if achieved_len < gate:
+                reason += f"max achieved length: {achieved_len} too low (gate {gate:.0f})"
                 reduce_gains = False
         return reduce_gains, reason 
 

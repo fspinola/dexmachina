@@ -54,6 +54,7 @@ def build_gain_curriculum_cfg(args):
         solip_multiplier=args.solip_multiplier,
         resample_every_epoch=args.resample_every_epoch,
         skip_grad=args.skip_grad,
+        achieved_len_frac=args.achieved_len_frac,
         zero_epoch=zero_epoch,
         dialback_ep_len=args.dialback_ep_len,
         dialback_min_epochs=args.dialback_min_epochs,
@@ -106,6 +107,7 @@ def _get_oakink_env_cfg(args, device, reward_cfg):
     env_cfg['use_contact_reward'] = args.contact_rew_weight > 0
     env_cfg['use_rl_games'] = args.use_rl_games
     env_cfg['rand_init_ratio'] = args.rand_init_ratio
+    env_cfg['uncapped_rsi'] = args.uncapped_rsi
     env_cfg['chunk_ep_length'] = args.chunk_ep_length
     # keep reward_cfg['contact_rew_weight'] = args.contact_rew_weight (set earlier); do not zero
 
@@ -237,6 +239,7 @@ def get_all_env_cfg(args, device, load_retarget_data=True):
     env_cfg['use_contact_reward'] = args.contact_rew_weight > 0
     env_cfg['use_rl_games'] = args.use_rl_games
     env_cfg['rand_init_ratio'] = args.rand_init_ratio
+    env_cfg['uncapped_rsi'] = args.uncapped_rsi
     env_cfg['chunk_ep_length'] = args.chunk_ep_length
 
     if args.record_interval > 0 or args.record_video:
@@ -407,6 +410,8 @@ def get_common_argparser():
     parser.add_argument('--use_rl_games', '-rlg', action='store_true')
     parser.add_argument('--is_eval', '-eval', action='store_true')
     parser.add_argument('--rand_init_ratio', '-randr', type=float, default=0.0)
+    parser.add_argument('--uncapped_rsi', action='store_true', help='RSI start uniform over the whole clip (ManipTrans/DeepMimic) instead of capped at the reachable frontier')
+    parser.add_argument('--achieved_len_frac', type=float, default=1.0, help='curriculum wean gate: reach frac*clip (default ~full clip-2); lower (e.g. 0.9) helps long clips wean')
     parser.add_argument('--chunk_ep_length', '-chunk', type=int, default=-1)
     
     parser.add_argument('--use_rand', '-rand', action='store_true')
