@@ -47,8 +47,11 @@ ACT_ARG=(); [ "$ACT" = "1" ] && ACT_ARG=(--actuate_object --kp_init 80 --kv_init
   --skip_grad --uniform_mode slow --wait_epochs 100 --deque_len 30 --num_zero_epoch "$NUMZERO")
 RSI="${RSI:-0}"                  # 1 = RSI on (start-to-end reference-state init: random start
                                  # frame, run to clip end; ManipTrans-style, no fixed-horizon cut)
+RAND="${RAND:-0.5}"              # rand_init_ratio when RSI=1; 0.5 = ManipTrans/ftrsi2 proven value
+                                 # (half envs start-at-0 full-clip -> curriculum gate sees correct
+                                 #  per-step task; rand1.0 = all-partial episodes, harder gate)
 RSI_ARG=(--rand_init_ratio 0.0)
-[ "$RSI" = "1" ] && RSI_ARG=(--rand_init_ratio 1.0)
+[ "$RSI" = "1" ] && RSI_ARG=(--rand_init_ratio "$RAND")
 HORIZON="${HORIZON:-32}"         # PPO rollout length; 32 matches ManipTrans exactly
 GCOL="${GCOL:-1}"                # 1 = --group_collisions (intra-hand finger self-collision, as ARCTIC)
 GCOL_ARG=(); [ "$GCOL" = "1" ] && GCOL_ARG=(--group_collisions)
