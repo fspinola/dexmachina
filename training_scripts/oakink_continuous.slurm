@@ -45,6 +45,8 @@ NUMZERO="${NUMZERO:-500}"        # epochs-before-end to force Kp->0 (zero_epoch 
                                  # MUST be < max_epochs or the hardstop zeroes gains at epoch 1.
 ACT_ARG=(); [ "$ACT" = "1" ] && ACT_ARG=(--actuate_object --kp_init 80 --kv_init 5 \
   --skip_grad --uniform_mode slow --wait_epochs 100 --deque_len 30 --num_zero_epoch "$NUMZERO")
+AM="${AM:-hybrid}"               # action mode; ff_residual = reference-conditioned residual
+                                 # (ManipTrans ResDexHand analog, use with ACT=0 for no-assist arm)
 RSI="${RSI:-0}"                  # 1 = RSI on (start-to-end reference-state init: random start
                                  # frame, run to clip end; ManipTrans-style, no fixed-horizon cut)
 RAND="${RAND:-0.5}"              # rand_init_ratio when RSI=1; 0.5 = ManipTrans/ftrsi2 proven value
@@ -66,7 +68,7 @@ nvidia-smi || true
 # (contacts + tip-dist obs off for OakInk). rand_init_ratio 0 = no RSI.
 uv run --no-sync python dexmachina/rl/train_rl_games.py \
   --oakink --oakink_pt "$PT" --hand "$HAND" -B "$ENVS" --max_epochs "$MAX_EPOCHS" --horizon "$HORIZON" \
-  -am hybrid --hybrid_scales 0.1 1.0 \
+  -am "$AM" --hybrid_scales 0.1 1.0 \
   -imi 0.3 -imw 0.5 -bc 0.3 -con "$CON" "${RSI_ARG[@]}" -ert 0.6 --aux_reset_thres 0 0 0 \
   "${UNCAP_ARG[@]}" --achieved_len_frac "$GATEFRAC" \
   "${CK_ARG[@]}" "${ACT_ARG[@]}" "${GCOL_ARG[@]}" --clip "$CLIP" -exp "$EXP"
