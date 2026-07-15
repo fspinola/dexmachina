@@ -41,6 +41,11 @@ EXP="${EXP:-graphcontFT_mixer30to40}"
 MAX_EPOCHS="${MAX_EPOCHS:-5000}"
 KP_INIT="${KP_INIT:-40}"; KV_INIT="${KV_INIT:-3}"; RAND_INIT="${RAND_INIT:-0.5}"; ENT="${ENT:-0.003}"
 ENVS="${ENVS:-12000}"; SAVE_FREQ="${SAVE_FREQ:-500}"
+# Action mode for the FT run -- MUST match the donor checkpoint (obs dims differ per mode).
+# ff_residual anchors actions to the NEW clip's kinref (bounded corrections + ref-error obs), so a
+# warm-started policy cannot execute confident-wrong free-hand behaviors on the unseen extension.
+AM="${AM:-hybrid}"
+RESCAP="${RESCAP:-0}"; RESCAP_FLAG=""; [ "$RESCAP" = "1" ] && RESCAP_FLAG="--res_cap"
 SIGMA="${SIGMA:-}"; SIGMA_FLAG=""; [ -n "$SIGMA" ] && SIGMA_FLAG="--warmstart_sigma $SIGMA"  # log-std; e.g. -1.386 -> std 0.25
 # CKPT=none (or empty) -> pristine FROM-SCRATCH control on current code (no warm-start), same recipe.
 WARM_FLAG=""
@@ -50,7 +55,7 @@ if [ -n "$CKPT" ] && [ "$CKPT" != "none" ]; then
 else
   CKPT="(none: from-scratch)"; SIGMA_FLAG=""
 fi
-echo "RUN: clip=$CLIP  ckpt=$CKPT  exp=$EXP  kp_init=$KP_INIT rand_init=$RAND_INIT ent=$ENT sigma=${SIGMA:-inherited} (h100-t3, NO resume)"
+echo "RUN: clip=$CLIP  ckpt=$CKPT  exp=$EXP  am=$AM rescap=$RESCAP kp_init=$KP_INIT rand_init=$RAND_INIT ent=$ENT sigma=${SIGMA:-inherited} (h100-t3, NO resume)"
 nvidia-smi || true
 
 uv run --no-sync python dexmachina/rl/train_rl_games.py -B "$ENVS" -obf -obt --max_epochs "$MAX_EPOCHS" \
@@ -59,7 +64,7 @@ uv run --no-sync python dexmachina/rl/train_rl_games.py -B "$ENVS" -obf -obt --m
   --wait_epochs 100 --learning_rate 0.0003 --contact_beta 10 --upper_ratios 0.9 0.9 1 --lower_ratios 0.8 0.8 1 \
   --save_freq "$SAVE_FREQ" --group_collisions --fixed_mode uniform --uniform_mode slow --action_penalty 0.01 \
   --dialback_ep_len 80 --skip_grad --deque_len 30 --task_rew_betas 10 1 5 --use_retarget_contact \
-  --aux_reset_thres 0 0 0 --curr_rew_thres 0.6 0.01 0.01 0.01 -am hybrid --hybrid_scales 0.1 1.0 \
+  --aux_reset_thres 0 0 0 --curr_rew_thres 0.6 0.01 0.01 0.01 -am "$AM" $RESCAP_FLAG --hybrid_scales 0.1 1.0 \
   --kp_init "$KP_INIT" --kv_init "$KV_INIT" --grip_scale 1.0 --rand_init_ratio "$RAND_INIT" \
   --clip "$CLIP" -imi 0.3 -bc 0.3 -con 3 -ert 0.6 -exp "$EXP" --hand allegro_hand
 echo "=== EXIT $? ==="
