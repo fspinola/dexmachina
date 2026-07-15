@@ -850,6 +850,15 @@ class BaseEnv:
         # (episodes only ever time out AT the demo end); it activates under chunking / fixed-horizon RSI.
         reached_demo_end = self.episode_length_buf >= self.demo_length
         time_outs = timeout & (~reached_demo_end) & (~self.nan_envs)
+        # CRITICAL end-of-clip reset backstop. The early-reset torch.where blocks above OVERWRITE
+        # need_reset for envs whose cumulative reward beats the -ert bar, which ERASES the timeout
+        # bit for well-performing envs. Pre-2e3f279 this was harmless because the raw `timeout` was
+        # returned as reset_time_outs and reset_buf = need_reset | timeout guaranteed the reset;
+        # 2e3f279 replaced that return with the (all-False for start-to-end) bootstrap mask, so
+        # forgiven envs NEVER reset: episodes ran past the demo end forever, reset_idx/update_progress
+        # never fired, curriculum deques froze, kp never decayed (o2acont/graphwide/FT freezes of
+        # 07-02..07-15). OR the timeout back in so episodes always end at the clip end.
+        need_reset = need_reset | timeout
         return need_reset, time_outs
 
     def prepare_sliced_contact(self, source='policy', part='top', side='left'):
