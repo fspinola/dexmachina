@@ -1079,8 +1079,13 @@ class BaseEnv:
         self.last_actions[env_idxs] = 0.0
         
         self.reset_buf[env_idxs] = True
+        # Mark every resetting env as TERMINATED so rl_games sees done=True even for resets that
+        # were added after _get_dones (e.g. the maniptrans-curriculum early-term OR'd into reset_buf).
+        # Do NOT touch reset_time_outs: it must stay _get_dones' clean truncation mask, because the
+        # wrapper forwards it as extras["time_outs"] and rl_games value_bootstrap adds gamma*V(s)
+        # wherever it is True. Force-setting it here made EVERY episode end bootstrap (true terminals
+        # and object-fell-off included), softening failure penalties vs the pre-2e3f279 era.
         self.reset_terminated[env_idxs] = True
-        self.reset_time_outs[env_idxs] = True
 
         # self.rew_buf[env_idxs] = 0.0
         self.cumulative_task_rew[env_idxs] = 0.0
