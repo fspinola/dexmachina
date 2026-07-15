@@ -211,6 +211,15 @@ the obs dim: `ff_residual` checkpoints are not compatible with other modes.
   hand, so RL is unaffected. The mimic ratios model the real Inspire hardware, so they are left
   as-is; native re-retargeting on DexMachina's URDF would shave off only that ~2 mm.
 
+### Offline BC warm-start (custom)
+
+`dexmachina/rl/train_bc_kinref.py` clones the kinematic references into the
+rl_games actor offline (teacher-forced regression, no simulator) and produces
+checkpoints that `train_rl_games.py --warmstart_ckpt` loads directly. Actor
+init only — the critic stays random. OakInk clips + Allegro + `-am hybrid`.
+See [BC_WARMSTART.md](BC_WARMSTART.md) for the label formula, commands,
+metrics, and fine-tuning safeguards.
+
 ## Citation
 This codebase is released with the following preprint:
 
