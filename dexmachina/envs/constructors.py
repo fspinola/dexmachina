@@ -98,6 +98,7 @@ def _get_oakink_env_cfg(args, device, reward_cfg):
             cfg['force_range'] = args.force_range_init
 
     env_cfg = get_env_cfg(use_visualizer=args.vis, show_viewer=args.vis, show_fps=args.show_fps)
+    env_cfg['is_oakink'] = True  # route to rigid-object paths for any object count (1 shared / 2 separate)
     env_cfg['num_envs'] = args.num_envs
     env_cfg['episode_length'] = ep_len
     env_cfg['observe_tip_dist'] = False           # asserts n_objects==1; off for OakInk

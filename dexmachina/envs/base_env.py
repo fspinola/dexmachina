@@ -277,7 +277,11 @@ class BaseEnv:
         if len(self.object_names) > 0: 
             self.object = self.objects[self.object_names[0]] # only support one object for now
         self.n_objects = len(self.object_names) # might be 0!!
-       
+        # OakInk clips take the rigid-object code paths regardless of object count (1 shared /
+        # body-only object or 2 separate). ARCTIC never sets this -> defaults to False -> every
+        # gate below reduces to its original `n_objects`-based form (byte-for-byte unchanged).
+        self.is_oakink = env_cfg.get('is_oakink', False)
+
         _curr_gate_len = self.max_episode_length
         self.use_curriculum = False
         self.curriculum = None
@@ -306,12 +310,12 @@ class BaseEnv:
                 rigid_solver=self.rigid_solver,
             )
         # The cardbox is an ARCTIC-only support surface placed under the single shared object.
-        # OakInk (n_objects >= 2) manipulates rigid objects in the air and its reference
-        # trajectories descend through this z; a fixed collider here blocks the object from
-        # tracking (task_rew ~ 0). Skip it entirely for OakInk (hide_cardbox only hid the
-        # visual, not the collision). ARCTIC (n_objects <= 1) is unchanged.
+        # OakInk manipulates rigid objects in the air and its reference trajectories descend
+        # through this z; a fixed collider here blocks the object from tracking (task_rew ~ 0).
+        # Skip it entirely for OakInk (hide_cardbox only hid the visual, not the collision).
+        # ARCTIC is unchanged (is_oakink=False -> the n_objects gate alone decides).
         self.cardboard_box = None
-        if self.n_objects < 2:
+        if not self.is_oakink and self.n_objects < 2:
             cardbox_size = (0.2,0.2,0.1)
             if self.n_objects == 1 and 'notebook' in self.object_names[0]:
                 print("Adding a SMALLER cardboard box for notebook")
@@ -397,7 +401,7 @@ class BaseEnv:
             self.observe_contact_force = False
             print("Disabling contact force observation because no object")
         self.use_contact_reward = env_cfg.get('use_contact_reward', False)
-        self.oakink_contacts = self.n_objects >= 2  # OakInk: one single-link object per hand
+        self.oakink_contacts = self.is_oakink  # OakInk: per-side single-link rigid object(s)
         if self.observe_contact_force or self.use_contact_reward:
             if self.oakink_contacts:
                 # Each hand contacts its OWN object (cfg['contact_sides']); single-link rigid.
@@ -586,11 +590,11 @@ class BaseEnv:
                     env_idxs=env_idxs,
                 )
 
-        if self.n_objects == 1:
+        if not self.is_oakink and self.n_objects == 1:
             if self.object.demo_dofs is not None:
                 targets = self.object.demo_dofs[step][None].repeat(len(env_idxs), 1)
                 self.object.entity.set_dofs_position(targets)
-        elif self.n_objects >= 2:
+        elif self.is_oakink:
             # OakInk rigid objects: set each object's full root pose (+ frozen joint) from its
             # demo so the kinematic replay shows hands + both objects exactly as in the reference.
             for obj in self.objects.values():
@@ -719,12 +723,12 @@ class BaseEnv:
 
     def _get_rewards(self):
         precomputed_task = None
-        if self.n_objects == 1:
+        if not self.is_oakink and self.n_objects == 1:
             obj = self.objects[self.object_names[0]]
             obj_pos, obj_quat, obj_arti = obj.root_pos, obj.root_quat, obj.dof_pos
         else:
             obj_pos, obj_quat, obj_arti = None, None, None
-            if self.n_objects >= 2:
+            if self.is_oakink:
                 precomputed_task = self._compute_multiobject_task_reward()
         bc_dist = torch.cat([robot.get_bc_dist() for robot in self.robots.values()], dim=-1)
         reward_kwargs = dict(
