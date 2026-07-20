@@ -39,8 +39,9 @@ def get_reward_cfg(last_n_frame=-1):
         "mask_zero_contact": True, # if both policy and demo has no contact, reward is 0 (1 if False)
         "contact_phase_penalty": 0,
 
-        "mask_well_track": False, 
+        "mask_well_track": False,
         "scale_well_track": 1.0,
+        "rigid_objects": False, # OakInk: objects have no articulation joint (obj_arti == 0)
         "force_penalty": 0.1,  # ~60 contact pairs in each env
         "action_penalty": 0.0,
         "objdex_baseline": False,
@@ -65,6 +66,7 @@ class RewardModule:
         self.multiply_all_rew = reward_cfg.get("multiply_all_rew", False)
         self.mask_well_track = reward_cfg.get("mask_well_track", False)
         self.scale_well_track = reward_cfg.get("scale_well_track", 1.0)
+        self.rigid_objects = reward_cfg.get("rigid_objects", False)
         self.obj_pos_beta = reward_cfg["obj_pos_beta"]
         self.obj_rot_beta = reward_cfg["obj_rot_beta"]
         self.obj_arti_beta = reward_cfg["obj_arti_beta"]
@@ -202,8 +204,14 @@ class RewardModule:
                 self.obj_arti_weight * obj_arti_rew
                 )
             
-        # give a bonus if obj state is well tracked and articulation joint is open 
-        well_track = (pos_dist < 0.005) & (rot_dist < 0.1) & (arti_dist < 0.1)  & (demo_arti > 0.1)
+        # give a bonus if obj state is well tracked and articulation joint is open
+        if self.rigid_objects:
+            # OakInk objects are rigid: obj_arti and demo_arti are identically 0, so the two
+            # articulation clauses are degenerate -- and `demo_arti > 0.1` would hold this flag
+            # permanently False. Track pose only (same thresholds as the articulated case).
+            well_track = (pos_dist < 0.005) & (rot_dist < 0.1)
+        else:
+            well_track = (pos_dist < 0.005) & (rot_dist < 0.1) & (arti_dist < 0.1)  & (demo_arti > 0.1)
         if self.scale_well_track > 1.0:
             task_rew = torch.where(well_track, task_rew * self.scale_well_track, task_rew)
 

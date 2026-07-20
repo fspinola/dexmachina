@@ -97,6 +97,10 @@ def _get_oakink_env_cfg(args, device, reward_cfg):
             cfg['kv'] = args.kv_init
             cfg['force_range'] = args.force_range_init
 
+    # OakInk objects carry no articulation joint, so the well_track flag must drop its arti clauses
+    # (`demo_arti > 0.1` would otherwise hold it permanently False).
+    reward_cfg['rigid_objects'] = True
+
     env_cfg = get_env_cfg(use_visualizer=args.vis, show_viewer=args.vis, show_fps=args.show_fps)
     env_cfg['is_oakink'] = True  # route to rigid-object paths for any object count (1 shared / 2 separate)
     env_cfg['num_envs'] = args.num_envs

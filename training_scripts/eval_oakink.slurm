@@ -19,7 +19,8 @@ ROOT=/lustre/fswork/projects/rech/ilc/uds34ao/retargeting/dexmachina
 cd "$ROOT"; mkdir -p slurm_logs
 CKPT="${CKPT:?set CKPT}"
 OUT="${OUT:-oakink_eval.mp4}"
-echo "EVAL ckpt=$CKPT -> $OUT"
+EXTRA="${EXTRA:-}"   # e.g. "--kp 6.8719 --kv 2.844 --fr 28.44" (partial assist) or "--zero_action"
+echo "EVAL ckpt=$CKPT -> $OUT  extra=$EXTRA"
 uv run --no-sync python eval_oakink_video.py -ck "$CKPT" -B 1 -o "$OUT" \
-  --cam_pos 0.6 -1.1 1.5 --cam_lookat -0.1 -0.1 1.0
+  --cam_pos 0.6 -1.1 1.5 --cam_lookat -0.1 -0.1 1.0 $EXTRA
 echo "=== EXIT $? ==="

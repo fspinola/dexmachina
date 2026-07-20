@@ -35,6 +35,14 @@ def main():
     p.add_argument("-o", "--out", type=str, default=None, help="output mp4 path")
     p.add_argument("--cam_pos", type=float, nargs=3, default=[0.6, -1.1, 1.5])
     p.add_argument("--cam_lookat", type=float, nargs=3, default=[-0.1, -0.1, 1.0])
+    # Partial-assist eval: keep the objects PD-driven at a FIXED operating point (e.g. the kp the
+    # wean stalled at) instead of the default assist-off. Lets us separate "policy works with the
+    # assist it was trained under" from "policy holds the object alone".
+    p.add_argument("--kp", type=float, default=None, help="eval at this object kp (default: assist OFF)")
+    p.add_argument("--kv", type=float, default=None)
+    p.add_argument("--fr", type=float, default=None, help="object force_range")
+    # Control: send zero actions, so whatever tracking remains is the ASSIST alone, not the policy.
+    p.add_argument("--zero_action", action="store_true", help="ignore the policy, send zero actions")
     args = p.parse_args()
 
     ckpt_dir = "/".join(args.checkpoint.split("/")[:-2])
@@ -44,14 +52,26 @@ def main():
         env_kwargs = pickle.load(f)
 
     assert env_kwargs["env_cfg"]["use_rl_games"]
+    # checkpoints saved before the flag existed carry a reward_cfg without it; this script is
+    # OakInk-only, so the rigid-object well_track variant always applies.
+    env_kwargs["reward_cfg"]["rigid_objects"] = True
     env_kwargs["env_cfg"]["is_eval"] = True
     env_kwargs["env_cfg"]["early_reset_threshold"] = 0.0
     env_kwargs["env_cfg"]["num_envs"] = args.num_envs
     env_kwargs["env_cfg"]["rand_init_ratio"] = 0.0
     env_kwargs["rand_cfg"]["randomize"] = False
-    env_kwargs.pop("curriculum_cfg", None)
-    for cfg in env_kwargs["object_cfgs"].values():
-        cfg["actuated"] = False  # kinematic objects, no PD at eval
+    assist = args.kp is not None
+    if assist:
+        # actuated=True makes BaseEnv build a Curriculum, which needs a fully-populated cfg; the
+        # gains it applies are overridden right after the build below.
+        from dexmachina.envs.curriculum import get_curriculum_cfg
+        env_kwargs["curriculum_cfg"] = get_curriculum_cfg(dict())
+        for cfg in env_kwargs["object_cfgs"].values():
+            cfg["actuated"] = True
+    else:
+        env_kwargs.pop("curriculum_cfg", None)
+        for cfg in env_kwargs["object_cfgs"].values():
+            cfg["actuated"] = False  # kinematic objects, no PD at eval
 
     env_kwargs["env_cfg"]["scene_kwargs"]["use_visualizer"] = True
     env_kwargs["env_cfg"]["record_video"] = True
@@ -64,6 +84,11 @@ def main():
     gs.init(backend=gs.gpu, logging_level="warning")
     env = BaseEnv(**env_kwargs)
     uenv = env
+    if assist:
+        # Force the exact operating point AFTER construction so the curriculum can't reset it to kp_init.
+        for obj in uenv.objects.values():
+            obj.set_joint_gains(kp=args.kp, kv=args.kv, force_range=args.fr)
+        print(f"[eval] PARTIAL ASSIST kp={args.kp} kv={args.kv} force_range={args.fr}")
 
     agent_cfg_fname = get_rl_config_path("rl_games_ppo_cfg")
     with open(agent_cfg_fname, encoding="utf-8") as f:
@@ -105,6 +130,8 @@ def main():
         for _ in range(uenv.max_episode_length):
             with torch.inference_mode():
                 actions = agent.get_action(obs, is_deterministic=True)
+                if args.zero_action:
+                    actions = torch.zeros_like(actions)
                 obs, rew, dones, infos = env.step(actions)
                 if isinstance(obs, dict):
                     obs = obs["obs"]
