@@ -61,6 +61,12 @@ GCOL="${GCOL:-1}"                # 1 = --group_collisions (intra-hand finger sel
 GCOL_ARG=(); [ "$GCOL" = "1" ] && GCOL_ARG=(--group_collisions)
 UNCAP="${UNCAP:-0}"              # 1 = --uncapped_rsi (RSI start uniform over whole clip, ManipTrans)
 UNCAP_ARG=(); [ "$UNCAP" = "1" ] && UNCAP_ARG=(--uncapped_rsi)
+ZEROALL="${ZEROALL:-0}"          # 1 = --zero_gains_all_low: collapse object gains to 0 only once
+                                 # kp, kv AND fr are all <=1% of init, instead of as soon as kp is
+                                 # small (kp decays 0.8/step but kv/fr 0.95, so the default snap
+                                 # discards ~18% of the damping+force range in one step).
+                                 # Pair with NUMZERO=0 so the hardstop does not preempt the decay.
+ZEROALL_ARG=(); [ "$ZEROALL" = "1" ] && ZEROALL_ARG=(--zero_gains_all_low)
 GATEFRAC="${GATEFRAC:-1.0}"      # curriculum wean gate: reach GATEFRAC*clip (1.0=full; 0.9 helps long)
 echo "OAKINK CONTINUOUS: hand=$HAND envs=$ENVS pt=$PT exp=$EXP con=$CON act=$ACT rsi=$RSI resume=${CK:-none} (hybrid, h100-t3 20h)"
 nvidia-smi || true
@@ -72,6 +78,6 @@ uv run --no-sync python dexmachina/rl/train_rl_games.py \
   --oakink --oakink_pt "$PT" --hand "$HAND" -B "$ENVS" --max_epochs "$MAX_EPOCHS" --horizon "$HORIZON" \
   -am "$AM" --hybrid_scales 0.1 1.0 \
   -imi 0.3 -imw 0.5 -bc 0.3 -con "$CON" "${RSI_ARG[@]}" -ert "$ERT" --aux_reset_thres 0 0 0 \
-  "${UNCAP_ARG[@]}" --achieved_len_frac "$GATEFRAC" \
+  "${UNCAP_ARG[@]}" "${ZEROALL_ARG[@]}" --achieved_len_frac "$GATEFRAC" \
   "${CK_ARG[@]}" "${ACT_ARG[@]}" "${GCOL_ARG[@]}" --clip "$CLIP" -exp "$EXP"
 echo "=== EXIT $? ==="

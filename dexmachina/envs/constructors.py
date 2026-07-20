@@ -55,6 +55,7 @@ def build_gain_curriculum_cfg(args):
         resample_every_epoch=args.resample_every_epoch,
         skip_grad=args.skip_grad,
         achieved_len_frac=args.achieved_len_frac,
+        zero_gains_all_low=args.zero_gains_all_low,
         zero_epoch=zero_epoch,
         dialback_ep_len=args.dialback_ep_len,
         dialback_min_epochs=args.dialback_min_epochs,
@@ -453,6 +454,9 @@ def get_common_argparser():
     
     # uniform-sampling schedule 
     parser.add_argument('--uniform_mode', '-um', type=str, default='slow', choices=['fast', 'slow'])
+    parser.add_argument('--zero_gains_all_low', action='store_true',
+                        help='collapse object gains to 0 only once kp, kv AND fr are all <=1%% of init '
+                             '(default: collapse as soon as kp is small, which discards ~18%% of kv/fr)')
     parser.add_argument('--upper_ratios', type=float, nargs='+', default=[0.8, 0.95, 0.95])
     parser.add_argument('--lower_ratios', type=float, nargs='+', default=[0.7, 0.9, 0.9])
     parser.add_argument('--deque_len', type=int, default=30)

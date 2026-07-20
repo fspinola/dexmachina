@@ -41,6 +41,10 @@ def get_curriculum_cfg(kwargs=dict()):
         "resample_every_epoch": -1, # if true and using uniform, re-sample gains every epoch
         "skip_grad": False, # if true, skip gradient check
         "achieved_len_frac": 1.0, # wean gate: reach frac*clip (default full: clip-2)
+        # Collapse gains to exactly 0 only once EVERY decay term is negligible, instead of as soon
+        # as kp is. kp decays at ~0.8/step but kv and fr at ~0.95, so the kp-triggered collapse
+        # discards ~18% of the initial damping/force-range in one step. False = original behaviour.
+        "zero_gains_all_low": False,
         "zero_epoch": 30000, # set all zeros once beyond this hardstop
         "dialback_ep_len": 50,
         "dialback_min_epochs": 500,
@@ -131,6 +135,7 @@ class Curriculum:
         # achieved-length gate: wean once episodes reach frac*clip (default ~full: clip-2). Lower it
         # (e.g. 0.9) so long clips can start weaning before mastering the very last frames.
         self.achieved_len_frac = curr_cfg.get('achieved_len_frac', 1.0)
+        self.zero_gains_all_low = curr_cfg.get('zero_gains_all_low', False)
 
     def post_scene_build_setup(self):
         if self.decay_solimp:
@@ -284,13 +289,25 @@ class Curriculum:
         else:
             raise ValueError("Invalid uniform mode") 
             
-        if ('kp' in self.decay_terms and self.curr_gains['kp'] < 0.05) or ('fr' in self.decay_terms and self.curr_gains['fr'] < 0.01):
+        if self.zero_gains_all_low:
+            # Wait until every decay term has decayed to <=1% of its initial value, so kv/fr are
+            # already negligible when the gains snap to 0 (see zero_gains_all_low in the cfg).
+            collapse = all(self.curr_gains[k] <= 0.01 * self.init_gains[k] for k in self.decay_terms)
+            collapse_lower = all(
+                self.curr_gains_lower.get(k, self.init_gains[k]) <= 0.01 * self.init_gains[k]
+                for k in self.decay_terms
+            )
+        else:
+            collapse = ('kp' in self.decay_terms and self.curr_gains['kp'] < 0.05) or ('fr' in self.decay_terms and self.curr_gains['fr'] < 0.01)
+            # if the lower bound kp is within 0.1 thres, reduce it to 0
+            collapse_lower = ('kp' in self.decay_terms and self.curr_gains_lower.get('kp', 1) < 0.1)
+
+        if collapse:
             for k in self.decay_terms:
                 self.curr_gains[k] = 0.0
                 self.curr_gains_lower[k] = 0.0
-            self.low_ratio = 0.0 
-        # if the lower bound kp is within 0.1 thres, reduce it to 0 
-        if ('kp' in self.decay_terms and self.curr_gains_lower.get('kp', 1) < 0.1):
+            self.low_ratio = 0.0
+        if collapse_lower:
             for k in self.decay_terms:
                 self.curr_gains_lower[k] = 0.0
             self.low_ratio = 0.0
