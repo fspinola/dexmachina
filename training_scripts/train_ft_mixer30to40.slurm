@@ -45,6 +45,7 @@ ENVS="${ENVS:-12000}"; SAVE_FREQ="${SAVE_FREQ:-500}"
 # ff_residual anchors actions to the NEW clip's kinref (bounded corrections + ref-error obs), so a
 # warm-started policy cannot execute confident-wrong free-hand behaviors on the unseen extension.
 AM="${AM:-hybrid}"
+RETARGET="${RETARGET:-graph}"   # kinref: graph (default) | ft | para | ... MUST match the warmstart donor's kinref
 RESCAP="${RESCAP:-0}"; RESCAP_FLAG=""; [ "$RESCAP" = "1" ] && RESCAP_FLAG="--res_cap"
 SIGMA="${SIGMA:-}"; SIGMA_FLAG=""; [ -n "$SIGMA" ] && SIGMA_FLAG="--warmstart_sigma $SIGMA"  # log-std; e.g. -1.386 -> std 0.25
 # CKPT=none (or empty) -> pristine FROM-SCRATCH control on current code (no warm-start), same recipe.
@@ -55,12 +56,12 @@ if [ -n "$CKPT" ] && [ "$CKPT" != "none" ]; then
 else
   CKPT="(none: from-scratch)"; SIGMA_FLAG=""
 fi
-echo "RUN: clip=$CLIP  ckpt=$CKPT  exp=$EXP  am=$AM rescap=$RESCAP kp_init=$KP_INIT rand_init=$RAND_INIT ent=$ENT sigma=${SIGMA:-inherited} (h100-t3, NO resume)"
+echo "RUN: clip=$CLIP  ckpt=$CKPT  exp=$EXP  retarget=$RETARGET am=$AM rescap=$RESCAP kp_init=$KP_INIT rand_init=$RAND_INIT ent=$ENT sigma=${SIGMA:-inherited} (h100-t3, NO resume)"
 nvidia-smi || true
 
 uv run --no-sync python dexmachina/rl/train_rl_games.py -B "$ENVS" -obf -obt --max_epochs "$MAX_EPOCHS" \
   $WARM_FLAG --entropy_coef "$ENT" $SIGMA_FLAG \
-  --actuate_object --retarget_name graph --horizon 16 -imw 0.5 --gain_mode all --curr_schedule uniform \
+  --actuate_object --retarget_name "$RETARGET" --horizon 16 -imw 0.5 --gain_mode all --curr_schedule uniform \
   --wait_epochs 100 --learning_rate 0.0003 --contact_beta 10 --upper_ratios 0.9 0.9 1 --lower_ratios 0.8 0.8 1 \
   --save_freq "$SAVE_FREQ" --group_collisions --fixed_mode uniform --uniform_mode slow --action_penalty 0.01 \
   --dialback_ep_len 80 --skip_grad --deque_len 30 --task_rew_betas 10 1 5 --use_retarget_contact \
