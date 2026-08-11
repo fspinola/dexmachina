@@ -49,14 +49,18 @@ RETARGET="${RETARGET:-graph}"   # kinref: graph (default) | ft | para | ... MUST
 RESCAP="${RESCAP:-0}"; RESCAP_FLAG=""; [ "$RESCAP" = "1" ] && RESCAP_FLAG="--res_cap"
 SIGMA="${SIGMA:-}"; SIGMA_FLAG=""; [ -n "$SIGMA" ] && SIGMA_FLAG="--warmstart_sigma $SIGMA"  # log-std; e.g. -1.386 -> std 0.25
 # CKPT=none (or empty) -> pristine FROM-SCRATCH control on current code (no warm-start), same recipe.
+# RESUME=1 -> FULL-STATE resume (--checkpoint: keeps optimizer+value+epoch, continues smoothly,
+# no warm-start reward crash). Correct tool for continuing the SAME clip. Default 0 = weights-only
+# warm-start (--warmstart_ckpt, fresh optimizer/epoch) for CROSS-clip transfer.
+RESUME="${RESUME:-0}"
 WARM_FLAG=""
 if [ -n "$CKPT" ] && [ "$CKPT" != "none" ]; then
-  [ -f "$CKPT" ] || { echo "MISSING warmstart ckpt: $CKPT"; exit 1; }
-  WARM_FLAG="--warmstart_ckpt $CKPT"
+  [ -f "$CKPT" ] || { echo "MISSING ckpt: $CKPT"; exit 1; }
+  if [ "$RESUME" = "1" ]; then WARM_FLAG="--checkpoint $CKPT"; SIGMA_FLAG=""; else WARM_FLAG="--warmstart_ckpt $CKPT"; fi
 else
   CKPT="(none: from-scratch)"; SIGMA_FLAG=""
 fi
-echo "RUN: clip=$CLIP  ckpt=$CKPT  exp=$EXP  retarget=$RETARGET am=$AM rescap=$RESCAP kp_init=$KP_INIT rand_init=$RAND_INIT ent=$ENT sigma=${SIGMA:-inherited} (h100-t3, NO resume)"
+echo "RUN: clip=$CLIP  ckpt=$CKPT  exp=$EXP  retarget=$RETARGET am=$AM rescap=$RESCAP kp_init=$KP_INIT rand_init=$RAND_INIT ent=$ENT sigma=${SIGMA:-inherited} resume=$RESUME (h100-t3)"
 nvidia-smi || true
 
 uv run --no-sync python dexmachina/rl/train_rl_games.py -B "$ENVS" -obf -obt --max_epochs "$MAX_EPOCHS" \
